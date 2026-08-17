@@ -18,27 +18,17 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 17.x]
+        node-version: [22.x, 24.x]
 
     steps:
     - name: 🚧 Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: 🚧 Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-    - name: 🚧 Installing Yarn
-      run: npm install -g yarn
-    - name: 🗄️ Cache Node Modules
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/cache
-          !~/cache/exclude
-          **/node_modules
-        key: ${{ runner.os }}-node_modules-${{ hashFiles('**/yarn.lock') }}
     - name: 📥 Installing dependencies
-      run: yarn
+      run: corepack enable && yarn install --frozen-lockfile
     - name: 🏗️ Generate Prisma TypeScript d.ts
       run: yarn generate
     - name: 🏗️ Compile TypeScript

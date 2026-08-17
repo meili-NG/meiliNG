@@ -3,6 +3,7 @@ allowBuilds:
   '@prisma/engines': true
   '@swc/core': true
   cpu-features: true
+  esbuild: true
   husky: true
   prisma: true
   sodium-native: true

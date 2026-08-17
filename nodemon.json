@@ -2,5 +2,5 @@
   "watch": ["src", "config.json"],
   "ext": "ts,json",
   "ignore": ["src/**/*.spec.ts"],
-  "exec": "ts-node ./src/index.ts"
+  "exec": "tsx ./src/index.ts"
 }
