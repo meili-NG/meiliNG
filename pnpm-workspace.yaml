@@ -1,0 +1,9 @@
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': true
+  cpu-features: true
+  husky: true
+  prisma: true
+  sodium-native: true
+  ssh2: true
