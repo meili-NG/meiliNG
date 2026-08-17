@@ -87,6 +87,7 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
             challengeCreatedAt: createdAt,
           },
           isVerified: false,
+          failedAttempts: 0,
         },
       });
     } else if (body.type === 'phone') {
@@ -156,6 +157,7 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
             challengeCreatedAt: createdAt,
           },
           isVerified: false,
+          failedAttempts: 0,
         },
       });
     } else {

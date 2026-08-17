@@ -5,6 +5,8 @@ import config from '../../../../resources/config';
 import { getPrismaClient } from '../../../../resources/prisma';
 import { Meiling } from '../../../../common';
 
+const MAX_VERIFICATION_ATTEMPTS = 5;
+
 type MeilingV1VerificationQuery = MeilingV1PhoneVerificationQuery | MeilingV1EmailVerificationQuery;
 
 type MeilingV1PhoneVerificationQuery = MeilingV1PhoneVerificationCodeQuery;
@@ -40,6 +42,7 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
   let verified = false;
   let createdAt = undefined;
   let expiresAt = undefined;
+  let codeStatus: { failedAttempts?: number } | undefined;
 
   if (body.type === 'phone') {
     if (!session.authenticationStatus.phone) {
@@ -48,6 +51,7 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
     }
 
     if (body.code) {
+      codeStatus = session.authenticationStatus.phone;
       verified = session.authenticationStatus.phone.challenge.challenge === body.code;
       createdAt = session.authenticationStatus.phone.challenge.challengeCreatedAt;
     }
@@ -63,6 +67,7 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
         return;
       }
 
+      codeStatus = session.authenticationStatus.email;
       verified = session.authenticationStatus.email.challenge.challenge == code;
       createdAt = session.authenticationStatus.email.challenge.challengeCreatedAt;
     } else if (token) {
@@ -95,6 +100,23 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
   } else if (!expiresAt) {
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST);
     return;
+  }
+
+  if (codeStatus) {
+    const failedAttempts = codeStatus.failedAttempts ?? 0;
+
+    if (failedAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+      throw new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+        'verification attempt limit exceeded',
+      );
+      return;
+    }
+
+    if (!verified) {
+      codeStatus.failedAttempts = failedAttempts + 1;
+      await Meiling.V1.Session.setAuthenticationStatus(req, session.authenticationStatus);
+    }
   }
 
   // bypass notification api and authentication issuing

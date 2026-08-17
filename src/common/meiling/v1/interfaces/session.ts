@@ -61,6 +61,7 @@ interface SessionChallengeStatus<T> {
   to: T;
   challenge: SessionChallengeBody;
   isVerified: boolean;
+  failedAttempts?: number;
 }
 
 export interface SessionAuthenticationStatus {
