@@ -7,6 +7,20 @@ import { getSessionFromRequest } from '../meiling/v1/session';
 import { Meiling } from '..';
 
 const DEFAULT_REQUEST_KEYS = ['headers', 'method', 'query_string', 'url'];
+const SENSITIVE_KEY_PATTERN = /password|secret|token|challenge|authorization|cookie|^code(?:verifier)?$/i;
+
+function redactSensitiveData(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSensitiveData);
+  if (!value || typeof value !== 'object' || value instanceof Date) return value;
+
+  return Object.keys(value).reduce<Record<string, unknown>>((redacted, key) => {
+    const normalizedKey = key.replace(/[^a-z0-9]/gi, '');
+    redacted[key] = SENSITIVE_KEY_PATTERN.test(normalizedKey)
+      ? '[Filtered]'
+      : redactSensitiveData((value as Record<string, unknown>)[key]);
+    return redacted;
+  }, {});
+}
 
 /**
  * Function copied from
@@ -27,13 +41,13 @@ function convertReq4Sentry(req: FastifyRequest, keys: string[] = DEFAULT_REQUEST
   const method = req.method;
   const host = req.hostname;
   const protocol = req.protocol;
-  const originalUrl = req.url;
+  const originalUrl = req.url.split('?')[0];
   const absoluteUrl = protocol + '://' + host + originalUrl;
 
   keys.forEach(function (key: string) {
     switch (key) {
       case 'headers':
-        requestData.headers = headers;
+        requestData.headers = redactSensitiveData(headers);
         break;
       case 'method':
         requestData.method = method;
@@ -42,11 +56,11 @@ function convertReq4Sentry(req: FastifyRequest, keys: string[] = DEFAULT_REQUEST
         requestData.url = absoluteUrl;
         break;
       case 'query_string':
-        requestData.query_string = Object.assign({}, req.query);
+        requestData.query_string = redactSensitiveData(req.query);
         break;
       default:
         if ({}.hasOwnProperty.call(req, key)) {
-          requestData[key] = (req as any)[key];
+          requestData[key] = redactSensitiveData((req as any)[key]);
         }
     }
   });
@@ -80,7 +94,7 @@ export function registerSentryTransaction(app: FastifyInstance, opts: FastifyPlu
     (app as any).sentryTransaction = Sentry.startTransaction(
       {
         op: 'http.server',
-        name: `${req.method} ${req.url}`,
+        name: `${req.method} ${req.url.split('?')[0]}`,
         ...traceData,
       },
       {
@@ -109,14 +123,14 @@ export function registerSentryTransaction(app: FastifyInstance, opts: FastifyPlu
               });
             }
 
-            tx.setData('session', session);
+            tx.setData('session', redactSensitiveData(session));
           }
 
-          tx.setData('url', req.url);
-          tx.setData('query', req.query);
+          tx.setData('url', req.url.split('?')[0]);
+          tx.setData('query', redactSensitiveData(req.query));
 
           if (typeof req.body === 'object') {
-            tx.setData('body', req.body);
+            tx.setData('body', redactSensitiveData(req.body));
           }
 
           tx.setHttpStatus(rep.statusCode);
@@ -149,19 +163,19 @@ export function sentryErrorHandler(error: Error, req: FastifyRequest, rep: Fasti
           ip: req.ip,
         });
       }
-      scope.setExtra('session', session as any);
+      scope.setExtra('session', redactSensitiveData(session));
     }
 
     scope.setLevel('error');
     scope.setTag('method', req.method);
-    scope.setTag('path', req.url);
+    scope.setTag('path', req.url.split('?')[0]);
 
     if (typeof req.query === 'object') {
-      scope.setExtra('query', req.query);
+      scope.setExtra('query', redactSensitiveData(req.query));
     }
 
     if (req.headers['content-type'] === 'application/json' && req.body && typeof req.body === 'object') {
-      scope.setExtra('body', req.body);
+      scope.setExtra('body', redactSensitiveData(req.body));
     }
 
     if ((error as Meiling.V1.Error.MeilingError)._isMeiling === true) {
