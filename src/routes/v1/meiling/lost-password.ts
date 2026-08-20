@@ -8,6 +8,8 @@ import { getPrismaClient } from '../../../resources/prisma';
 import { Event } from '../../../common';
 import { AuthenticationJSONObject } from '../../../common/meiling/identity/user';
 
+const MAX_VERIFICATION_ATTEMPTS = 5;
+
 export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply): Promise<void> {
   const session = (req as FastifyRequestWithSession).session;
   let body;
@@ -203,6 +205,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
       challenge: challenge,
       challengeCreatedAt: new Date(),
       passwordResetUser: user.id,
+      failedAttempts: 0,
     });
 
     const extras = {
@@ -291,6 +294,15 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     return;
   }
 
+  const failedAttempts = passwordReset.failedAttempts ?? 0;
+  if (failedAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+    throw new Meiling.V1.Error.MeilingError(
+      Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+      'verification attempt limit exceeded',
+    );
+    return;
+  }
+
   let data = undefined;
 
   if (passwordReset.method === Meiling.V1.Interfaces.ExtendedAuthMethods.WEBAUTHN) {
@@ -336,6 +348,9 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     data as unknown as AuthenticationJSONObject | undefined,
   );
   if (!isValid) {
+    passwordReset.failedAttempts = failedAttempts + 1;
+    await Meiling.V1.Session.setPasswordResetSession(req, passwordReset);
+
     throw new Meiling.V1.Error.MeilingError(
       Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_INVALID,
       'invalid challenge',

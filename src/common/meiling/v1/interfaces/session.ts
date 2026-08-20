@@ -39,6 +39,7 @@ export interface SessionPasswordReset extends SessionChallengeBody {
   method?: ExtendedAuthMethods;
   passwordResetUser?: string;
   isVerified?: boolean;
+  failedAttempts?: number;
 }
 
 interface SessionTwoFactor extends SessionChallengeBody {
