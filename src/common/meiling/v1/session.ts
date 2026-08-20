@@ -434,6 +434,7 @@ export async function setExtendedAuthenticationSessionMethodAndChallenge(
       session.extendedAuthentication.challenge =
         challenge === undefined ? session.extendedAuthentication.challenge : challenge;
       session.extendedAuthentication.challengeCreatedAt = new Date();
+      session.extendedAuthentication.failedAttempts = 0;
 
       if (challengeCreatedAt) {
         session.extendedAuthentication.challengeCreatedAt = challengeCreatedAt;

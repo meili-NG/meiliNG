@@ -10,6 +10,8 @@ import { getPrismaClient } from '../../../resources/prisma';
 import { AuthenticationJSONObject } from '../../../common/meiling/identity/user';
 import { NodeEnvironment } from '../../../interface';
 
+const MAX_VERIFICATION_ATTEMPTS = 5;
+
 export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Promise<void> {
   const session = (req as FastifyRequestWithSession).session;
   let body;
@@ -388,6 +390,15 @@ please request this endpoint without challengeResponse field to request challeng
       }
     }
 
+    const failedAttempts = extendedAuthSession.failedAttempts ?? 0;
+    if (failedAttempts >= MAX_VERIFICATION_ATTEMPTS) {
+      throw new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+        'verification attempt limit exceeded',
+      );
+      return;
+    }
+
     // challenge value from session
     const challenge = extendedAuthSession.challenge;
     const authorizedUsers: UserModel[] = [];
@@ -510,6 +521,9 @@ please request this endpoint without challengeResponse field to request challeng
       );
       return;
     } else {
+      extendedAuthSession.failedAttempts = failedAttempts + 1;
+      await Meiling.V1.Session.setExtendedAuthenticationSession(req, extendedAuthSession);
+
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.SIGNIN_FAILED, 'invalid 2fa');
       return;
     }

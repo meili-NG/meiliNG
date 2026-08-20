@@ -46,11 +46,13 @@ interface SessionTwoFactor extends SessionChallengeBody {
   id: string;
   type: SigninType.TWO_FACTOR_AUTH;
   method?: ExtendedAuthMethods;
+  failedAttempts?: number;
 }
 
 interface SessionPasswordLess extends SessionChallengeBody {
   type: SigninType.PASSWORDLESS;
   method?: ExtendedAuthMethods;
+  failedAttempts?: number;
 }
 
 interface SessionChallengeBody {
