@@ -51,7 +51,7 @@ export function checkIDTokenIssueCredentials(): true | string {
     Log.warn(
       'This is a BAD PRACTICE and due to how JWT verifications work, All id_tokens issued on this session will be invalidated after restart.',
     );
-    Log.warn('Please generate one via', chalk.bold('yarn genkeys'), 'and apply it to your configuration.');
+    Log.warn('Please generate one via', chalk.bold('pnpm keygen'), 'and apply it to your configuration.');
     console.log();
 
     if (config.openid.jwt.algorithm.startsWith('HS')) {

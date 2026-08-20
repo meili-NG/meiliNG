@@ -27,10 +27,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+    - name: 📦 Installing pnpm
+      run: npm i -g pnpm
     - name: 📥 Installing dependencies
-      run: corepack enable && yarn install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
     - name: 🏗️ Generate Prisma TypeScript d.ts
-      run: yarn generate
+      run: pnpm generate
     - name: 🏗️ Compile TypeScript
       run: tsc
       

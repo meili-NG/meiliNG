@@ -20,24 +20,22 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 24.x
-    - name: 📥 Installing Yarn
-      run: npm install -g yarn
-    - name: 🗄️ Cache Node Modules
+    - name: 📦 Installing pnpm
+      run: npm i -g pnpm
+    - name: 🗄️ Cache pnpm Store
       uses: actions/cache@v2
       with:
         path: |
-          ~/cache
-          !~/cache/exclude
-          **/node_modules
-        key: ${{ runner.os }}-node_modules-${{ hashFiles('**/yarn.lock') }}
+          ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
     - name: 📥 Installing dependencies
       run: |
-        yarn
+        pnpm install --frozen-lockfile
         npm i -g pm2
     - name: 📝 Generate Prisma Typescript d.ts
-      run: yarn generate
+      run: pnpm generate
     - name: 👷 Build Typescript
-      run: yarn build
+      run: pnpm build
     - name: 🛠️ Setting up deploy env variables
       run: node ./.github/workflows-files/get-dotenv-from-base64.js
       env:

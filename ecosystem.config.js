@@ -35,7 +35,7 @@ module.exports = {
       repo: 'https://github.com/meili-ng/meiliNG',
       path: process.env.DEPLOY_PRODUCTION_PATH,
       'pre-deploy-local': `node deploy-env.production.js`,
-      'post-deploy': `yarn && yarn build && yarn generate && yarn prisma migrate deploy && pm2 startOrRestart ecosystem.config.js`,
+      'post-deploy': `pnpm install --frozen-lockfile && pnpm build && pnpm generate && pnpm prisma migrate deploy && pm2 startOrRestart ecosystem.config.js`,
       key: keyFile,
       ssh_options: [
         process.env.DEPLOY_PRODUCTION_BYPASS_KEY_CHECK ? 'StrictHostKeyChecking=no' : undefined,

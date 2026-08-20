@@ -9,20 +9,20 @@ Hello, Welcome to meiliNG, an oAuth2 based authentication engine to build your c
 ### Installing Node
 meiliNG works best with latest LTS version of Node, Please go [here](https://nodejs.org/en/) to install it by yourself.
 
-### Installing Yarn
-meiliNG uses [yarn](https://yarnpkg.com) for managing dependencies of application.  
+### Installing pnpm
+meiliNG uses [pnpm](https://pnpm.io) for managing dependencies of application.  
 
 > **Note**  
-> Currently Yarn 1.x is preferred due to compatibility issues. 
+> pnpm 11 or later is preferred. You can enable it via `corepack enable` (bundled with Node.js) or install it [manually](https://pnpm.io/installation).
 
 ### Installing node_modules
 meiliNG does depend on lots of packages on npmjs.org which does not come out of box.  
-Please install node dependencies with `yarn` command.  
+Please install node dependencies with `pnpm install` command.  
 
 ### (Optional) Generate Prisma Definition Files
-On postinstall of node_modules or any updates, `yarn` should automatically generate prisma definition files. you can generate prisma definition files via `prisma`'s internal commands.  
+On postinstall of node_modules or any updates, `pnpm` should automatically generate prisma definition files. you can generate prisma definition files via `prisma`'s internal commands.  
 
-Please run `yarn generate` if the prisma definition files are not properly generated.  
+Please run `pnpm generate` if the prisma definition files are not properly generated.  
 
 ## Configuring Environment Variables
 meiliNG comes with various config methods.  
@@ -47,7 +47,7 @@ You should set environment variable `DATABASE_URL` or edit [`.env` file](/.env) 
 
 ### Setting up automatically
 
-Run `yarn configure` and follow the directions on screen.  
+Run `pnpm configure` and follow the directions on screen.  
 
 > **Note**  
 > [@ldmsys](https://github.com/ldmsys) is currently working on automatic installer for meiliNG.  
@@ -98,7 +98,7 @@ FASTIFY_USE_PROXY=1
 # The "issuer" on OpenID Connect id_token
 OPENID_ISSUING_AUTHORITY="https://demo.meili.ng"
 
-# Deprecated: use "yarn keygen" will automatically generate certificates for creating JWTs
+# Deprecated: use "pnpm keygen" will automatically generate certificates for creating JWTs
 OPENID_SECRET_KEY=""
 
 NOTIFICATION_API_HOST="http://notification.meili.ng"
@@ -124,7 +124,7 @@ These are the secret key to sign your OpenID Token. Please make sure this is lon
 
 **Please Run the following:**  
 ```bash
-yarn keygen
+pnpm keygen
 ```
 
 
@@ -136,10 +136,10 @@ yarn keygen
 ### Transpile Typescript Code
 In order to start meiliNG, you should compile Typescript code into JavaScript code to let node to run.  
 
-1. Run `yarn build`
+1. Run `pnpm build`
 
 You should do this every time you edit your source code or if there is any update of meiliNG.
 
 ### Run Application
-You can start application by typing `yarn start`.  
+You can start application by typing `pnpm start`.  
 
