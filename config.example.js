@@ -70,7 +70,7 @@ module.exports = {
     /** Signup configuration - meiliNG Internal */
     signup: {
       /** Enable meiliNG Internal Signup? set it to false to disable (e.g. only use custom signup process) */
-      enabled: /^true$/gi.test(process.env.MEILING_SIGNUP_ENABLED) || true,
+      enabled: !/^false$/i.test(process.env.MEILING_SIGNUP_ENABLED || ''),
     },
   },
   session: {
