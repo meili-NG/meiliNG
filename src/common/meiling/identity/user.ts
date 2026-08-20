@@ -1,6 +1,6 @@
 import { Email, Group, OAuthTokenType, Phone, User as UserModel, OAuthClient } from '@prisma/client';
-import { VerifiedAuthenticationResponse, VerifiedRegistrationResponse } from '@simplewebauthn/server/./dist';
-import { AttestationFormat } from '@simplewebauthn/server/dist/helpers/decodeAttestationObject';
+import { VerifiedRegistrationResponse } from '@simplewebauthn/server';
+import { AttestationFormat } from '@simplewebauthn/server/helpers';
 import { CredentialDeviceType } from '@simplewebauthn/typescript-types';
 import bcrypt from 'bcryptjs';
 import JWT from 'jsonwebtoken';
@@ -130,17 +130,17 @@ export async function getBasicInfo(
   const deletedQuery = queryOptions?.includeDeleted
     ? {}
     : {
-        OR: [
-          {
-            deletedAt: null,
+      OR: [
+        {
+          deletedAt: null,
+        },
+        {
+          deletedAt: {
+            gte: new Date(),
           },
-          {
-            deletedAt: {
-              gte: new Date(),
-            },
-          },
-        ],
-      };
+        },
+      ],
+    };
   const prismaQuery = {
     ...deletedQuery,
   };
@@ -508,10 +508,10 @@ export async function findByEmail(email: string, verified: boolean | undefined =
       n.userId === undefined || n.userId === null
         ? undefined
         : getPrismaClient().user.findFirst({
-            where: {
-              id: n.userId,
-            },
-          }),
+          where: {
+            id: n.userId,
+          },
+        }),
     )
     .filter((n) => n !== undefined && n !== null);
 
@@ -794,9 +794,9 @@ export async function createIDToken(
     const key =
       config.openid.jwt.privateKey.passphrase !== undefined
         ? {
-            key: config.openid.jwt.privateKey.key,
-            passphrase: config.openid.jwt.privateKey.passphrase,
-          }
+          key: config.openid.jwt.privateKey.key,
+          passphrase: config.openid.jwt.privateKey.passphrase,
+        }
         : config.openid.jwt.privateKey.key;
 
     // edge case handling
