@@ -65,7 +65,7 @@ export async function oAuth2AuthorizationCodeHandler(req: FastifyRequest, rep: F
   (req as FastifyRequestWithUser).user = user;
 
   const authorization = await Meiling.Authentication.Token.getAuthorization(token, type);
-  if (!authorization) {
+  if (!authorization || authorization.clientId !== clientId) {
     Meiling.OAuth2.Error.sendOAuth2Error(
       rep,
       Meiling.OAuth2.Error.ErrorType.INVALID_GRANT,
