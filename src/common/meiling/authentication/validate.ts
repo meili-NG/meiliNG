@@ -31,10 +31,7 @@ export async function validatePGPSign(
 
   const recoveredChallenge = Buffer.from(verification.data).toString('utf-8');
 
-  let isSignaturesValid = true;
-  for (const signature of verification.signatures) {
-    isSignaturesValid = isSignaturesValid && signature.valid;
-  }
+  const isSignaturesValid = verification.signatures.length > 0 && verification.signatures.every(({ valid }) => valid);
 
   return recoveredChallenge.trim() == challenge.trim() && isSignaturesValid;
 }
