@@ -74,6 +74,11 @@ export interface ConfigInterface {
     signup: {
       enabled: boolean;
     };
+    rateLimit?: {
+      authentication?: RateLimitConfig;
+      recovery?: RateLimitConfig;
+      signup?: RateLimitConfig;
+    };
   };
   session: {
     v1: {
@@ -131,4 +136,9 @@ export interface ConfigInterface {
       url: string[];
     };
   };
+}
+
+interface RateLimitConfig {
+  max: number;
+  timeframe: number;
 }

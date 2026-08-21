@@ -1,3 +1,4 @@
+import fastifyRateLimit from '@fastify/rate-limit';
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { NodeEnvironment } from '../../../interface';
@@ -13,6 +14,7 @@ import { signupPlugin } from './signup/';
 import { userPlugin } from './users';
 import { sentryErrorHandler } from '../../../common/sentry/tracer';
 import { User as UserModel } from '@prisma/client';
+import { normalizeRateLimitIP, rateLimitCacheSize, rateLimitDefaults } from '../../../common/fastify';
 
 export interface FastifyRequestWithSession extends FastifyRequest {
   session: Meiling.V1.Interfaces.MeilingSession;
@@ -23,6 +25,17 @@ export interface FastifyRequestWithUser extends FastifyRequestWithSession {
 }
 
 function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
+  app.register(fastifyRateLimit, {
+    global: false,
+    cache: rateLimitCacheSize,
+    keyGenerator: (req) => normalizeRateLimitIP(req.ip),
+    errorResponseBuilder: () =>
+      new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.RATE_LIMITED,
+        'Too many requests. Please try again later.',
+      ),
+  });
+
   app.addSchema({
     $id: 'MeilingV1Error',
     description: 'Common error response of meiliNG',
@@ -80,6 +93,19 @@ function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done:
 }
 
 function sessionRequiredPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
+  const authenticationConfig = config.meiling.rateLimit?.authentication ?? rateLimitDefaults.authentication;
+  const recoveryConfig = config.meiling.rateLimit?.recovery ?? rateLimitDefaults.recovery;
+  const authenticationRateLimit = app.rateLimit({
+    max: authenticationConfig.max,
+    timeWindow: authenticationConfig.timeframe * 1000,
+    cache: rateLimitCacheSize,
+  });
+  const recoveryRateLimit = app.rateLimit({
+    max: recoveryConfig.max,
+    timeWindow: recoveryConfig.timeframe * 1000,
+    cache: rateLimitCacheSize,
+  });
+
   app.decorateRequest('session', undefined);
 
   app.addHook('onRequest', async (req, rep) => {
@@ -102,18 +128,22 @@ function sessionRequiredPlugin(app: FastifyInstance, opts: FastifyPluginOptions,
     },
   });
 
-  app.post('/signin', signinHandler);
+  app.post('/signin', { preHandler: authenticationRateLimit }, signinHandler);
 
   app.register(signupPlugin, { prefix: '/signup' });
 
-  app.post('/lost-password', lostPasswordHandler);
+  app.post('/lost-password', { preHandler: recoveryRateLimit }, lostPasswordHandler);
 
   app.register(signoutPlugin, { prefix: '/signout' });
 
   app.register(userPlugin, { prefix: '/users' });
   app.register(appsPlugin, { prefix: '/apps' });
 
-  app.register(meilingV1SessionAuthnPlugin, { prefix: '/authn' });
+  app.register(meilingV1SessionAuthnPlugin, {
+    prefix: '/authn',
+    authenticationRateLimit,
+    recoveryRateLimit,
+  });
 
   done();
 }

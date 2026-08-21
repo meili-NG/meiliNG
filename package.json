@@ -9,6 +9,7 @@
   "dependencies": {
     "@fastify/cors": "^8.2.0",
     "@fastify/formbody": "^7.3.0",
+    "@fastify/rate-limit": "9.1.0",
     "@fastify/swagger": "^8.1.0",
     "@prisma/client": "4.16.2",
     "@sentry/node": "^7.9.0",
@@ -23,6 +24,7 @@
     "fastify": "^4.10.2",
     "fastify-secure-session": "^2.3.0",
     "figlet": "^1.5.0",
+    "ipaddr.js": "2.4.0",
     "jsonwebtoken": "^8.5.1",
     "libphonenumber-js": "^1.9.49",
     "mysql2": "^2.2.5",
