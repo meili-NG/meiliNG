@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { Meiling, Utils } from '../../../common';
@@ -12,6 +13,16 @@ import permissionsAdminHandler from './permissions';
 import sessionsAdminHandler from './sessions';
 import tokensAdminHandler from './tokens';
 import usersAdminHandler from './users';
+
+const isAdminToken = (tokens: string[], candidate: string): boolean => {
+  if (!Utils.isNotBlank(candidate)) return false;
+
+  const requested = Buffer.from(candidate);
+  return tokens.some((token) => {
+    const configured = Buffer.from(token);
+    return configured.length === requested.length && crypto.timingSafeEqual(configured, requested);
+  });
+};
 
 const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void => {
   app.setErrorHandler(async (_err, req, rep) => {
@@ -49,7 +60,7 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
   });
 
   app.addHook('onRequest', (req, rep, next) => {
-    if (!config.admin || !config.admin.tokens) {
+    if (!config.admin || !config.admin.tokens.length) {
       throw new Meiling.V1.Error.MeilingError(
         Meiling.V1.Error.ErrorType.FORBIDDEN,
         'User is not providing proper login credentials for admin',
@@ -79,13 +90,11 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
         .filter((n) => Utils.checkBase64(n))
         .map((n) => Buffer.from(n, 'base64').toString('utf-8'));
 
-      const matchedTokens = basicTokens.filter((n) => n === tokenString);
-      if (matchedTokens.length === 0) {
+      if (!isAdminToken(basicTokens, tokenString)) {
         throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_TOKEN, 'Invalid Admin Token');
       }
     } else if (token.method.toLowerCase() === 'bearer') {
-      const matchedTokens = config.admin.tokens.filter((n) => n === token.token);
-      if (matchedTokens.length === 0) {
+      if (!isAdminToken(config.admin.tokens, token.token)) {
         throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_TOKEN, 'Invalid Admin Token');
       }
     } else {

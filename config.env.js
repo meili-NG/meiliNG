@@ -5,6 +5,11 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const adminTokens = (process.env.ADMIN_TOKENS || '').split(',').map((token) => token.trim());
+if (adminTokens.some((token) => !token)) {
+  throw new Error('ADMIN_TOKENS must contain only non-empty tokens');
+}
+
 module.exports = {
   node: {
     environment: process.env.NODE_ENV || 'development',
@@ -124,7 +129,7 @@ module.exports = {
     token: process.env.BARIDEGI_API_TOKEN || 'baridegi_token',
   },
   admin: {
-    tokens: (process.env.ADMIN_TOKENS || '').split(',') || [],
+    tokens: adminTokens,
     frontend: {
       url: process.env.ADMIN_FRONTEND_URLS ? process.env.ADMIN_FRONTEND_URLS.split(',') : ['http://frontend.meili.ng'],
     },
