@@ -97,7 +97,7 @@ export async function oAuth2AuthorizationCodeHandler(req: FastifyRequest, rep: F
   if ((metadata as Meiling.Authentication.Token.TokenMetadataV1)?.version === 1) {
     const metadataV1 = metadata as Meiling.Authentication.Token.TokenMetadataV1;
 
-    needRefreshToken = metadataV1.options?.offline !== undefined;
+    needRefreshToken = metadataV1.options?.offline === true;
 
     if (metadataV1.options?.code_challenge) {
       const challenge = metadataV1.options.code_challenge;
