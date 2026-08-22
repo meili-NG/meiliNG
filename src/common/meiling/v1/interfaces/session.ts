@@ -51,6 +51,7 @@ interface SessionTwoFactor extends SessionChallengeBody {
 
 interface SessionPasswordLess extends SessionChallengeBody {
   type: SigninType.PASSWORDLESS;
+  userId?: string;
   method?: ExtendedAuthMethods;
   failedAttempts?: number;
 }

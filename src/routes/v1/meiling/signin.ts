@@ -162,12 +162,22 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
       const username = body?.context?.username;
 
       if (username !== undefined) {
-        const users = await Meiling.Identity.User.findByCommonUsername(username);
+        const users = Utils.getUnique(
+          await Meiling.Identity.User.findByCommonUsername(username),
+          (user, otherUser) => user.id === otherUser.id,
+        );
 
         if (users.length === 0) {
           throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.WRONG_USERNAME, 'Wrong username.');
           return;
         }
+        if (users.length > 1) {
+          throw new Meiling.V1.Error.MeilingError(
+            Meiling.V1.Error.ErrorType.MORE_THAN_ONE_USER_MATCHED,
+            'more than one user was matched, use a unique username instead.',
+          );
+        }
+
         targetUsers.push(...users);
 
         for (const user of users) {
@@ -182,6 +192,7 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
 
       await Meiling.V1.Session.setExtendedAuthenticationSession(req, {
         type: Meiling.V1.Interfaces.SigninType.PASSWORDLESS,
+        userId: targetUsers[0]?.id,
       });
     }
 
@@ -361,6 +372,16 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
 
     // validate current method is same with session's extendedAuthentication
     const extendedAuthSession = session.extendedAuthentication;
+    if (
+      extendedAuthSession.type === Meiling.V1.Interfaces.SigninType.PASSWORDLESS &&
+      extendedAuthSession.userId !== targetUsers[0]?.id
+    ) {
+      throw new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_NOT_GENERATED,
+        'authentication request does not match the user it was generated for.',
+      );
+    }
+
     if (extendedAuthSession.method !== body.data?.method) {
       throw new Meiling.V1.Error.MeilingError(
         Meiling.V1.Error.ErrorType.AUTHENTICATION_NOT_CURRENT_CHALLENGE_METHOD,
