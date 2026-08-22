@@ -348,7 +348,7 @@ export async function setSession(req: FastifyRequest, data?: MeilingSession): Pr
                 try {
                   // not async function since we don't need to wait it to complete.
                   Meiling.Identity.User.updateLastAuthenticated(user.id);
-                } catch (e) {}
+                } catch (e) { }
               }
             }
           }
@@ -505,6 +505,10 @@ export async function login(req: FastifyRequest, user: UserModel | string, remem
     const userData = await Meiling.Identity.User.getBasicInfo(user);
     if (userData === null || userData === undefined) {
       return;
+    }
+
+    if (!userData?.isActive) {
+      throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.SIGNIN_FAILED, 'signin failed');
     }
 
     if (session.user.map((user) => user.id === userData.id).indexOf(true) < 0) {
