@@ -72,6 +72,21 @@ module.exports = {
       /** Enable meiliNG Internal Signup? set it to false to disable (e.g. only use custom signup process) */
       enabled: !/^false$/i.test(process.env.MEILING_SIGNUP_ENABLED || ''),
     },
+    /** Rate limits for security-sensitive user authentication endpoints. */
+    rateLimit: {
+      authentication: {
+        max: 30,
+        timeframe: 600,
+      },
+      recovery: {
+        max: 10,
+        timeframe: 3600,
+      },
+      signup: {
+        max: 10,
+        timeframe: 3600,
+      },
+    },
   },
   session: {
     /** Configures Version 1 of the meiliNG Session */

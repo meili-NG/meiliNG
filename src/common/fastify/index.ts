@@ -4,6 +4,8 @@ import { nameStylized } from '..';
 import { info as packageJson } from '../../resources/package';
 import config from '../../resources/config';
 
+export { normalizeRateLimitIP, rateLimitCacheSize, rateLimitDefaults } from './rate-limit';
+
 // TODO: Typescript sucks. fix later.
 export function setupSwaggerUI(app: any) {
   app.register(fastifySwagger, {
