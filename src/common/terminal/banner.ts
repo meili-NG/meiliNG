@@ -41,4 +41,11 @@ export const devModeCheck = (): void => {
     );
     console.log();
   }
+  if (config.notificationApi?.enable === false) {
+    console.log(
+      chalk.yellow('Notification API is disabled, ') +
+        chalk.bgYellowBright(chalk.black(chalk.bold(' Authentication code verification will be bypassed. '))),
+    );
+    console.log();
+  }
 };
