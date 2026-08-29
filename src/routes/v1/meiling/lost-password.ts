@@ -306,7 +306,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
   let data = undefined;
 
   if (passwordReset.method === Meiling.V1.Interfaces.ExtendedAuthMethods.WEBAUTHN) {
-    const idRaw = (passwordReset.challenge as any).id;
+    const idRaw = body.data.challengeResponse.id;
     if (typeof idRaw !== 'string' || !Utils.checkShortenedBase64(idRaw))
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid WebAuthn ID');
 
@@ -315,7 +315,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     data = await getPrismaClient().authentication.findFirst({
       where: {
         user: {
-          id: user.id,
+          id: passwordReset.passwordResetUser,
         },
         method: 'WEBAUTHN',
         allowPasswordReset: true,
