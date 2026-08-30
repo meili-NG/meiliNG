@@ -37,6 +37,10 @@ async function userWebAuthnActionGetKey(req: FastifyRequest, rep: FastifyReply):
     id: keyData.id,
     createdAt: keyData.createdAt,
     name: (keyData.data as any).data.name,
+    keyId: Buffer.from(
+      (keyData.data as unknown as Meiling.Identity.User.AuthenticationWebAuthnObject).data.key.id,
+      'base64',
+    ).toString('base64url'),
 
     allowSingleFactor: keyData.allowSingleFactor,
     allowTwoFactor: keyData.allowTwoFactor,

@@ -31,6 +31,10 @@ function userWebAuthnPlugin(app: FastifyInstance, opts: FastifyPluginOptions, do
         id: n.id,
         name: (n.data as any)?.data?.name,
         createdAt: n.createdAt,
+        keyId: Buffer.from(
+          (n.data as unknown as Meiling.Identity.User.AuthenticationWebAuthnObject).data.key.id,
+          'base64',
+        ).toString('base64url'),
       })),
     );
   });
