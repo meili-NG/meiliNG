@@ -69,6 +69,20 @@ module.exports = {
     signup: {
       enabled: !/^false$/i.test(process.env.MEILING_SIGNUP_ENABLED || ''),
     },
+    rateLimit: {
+      authentication: {
+        max: Number(process.env.MEILING_RATE_LIMIT_AUTHENTICATION_MAX) || 30,
+        timeframe: Number(process.env.MEILING_RATE_LIMIT_AUTHENTICATION_TIME_FRAME) || 600,
+      },
+      recovery: {
+        max: Number(process.env.MEILING_RATE_LIMIT_RECOVERY_MAX) || 10,
+        timeframe: Number(process.env.MEILING_RATE_LIMIT_RECOVERY_TIME_FRAME) || 3600,
+      },
+      signup: {
+        max: Number(process.env.MEILING_RATE_LIMIT_SIGNUP_MAX) || 10,
+        timeframe: Number(process.env.MEILING_RATE_LIMIT_SIGNUP_TIME_FRAME) || 3600,
+      },
+    },
   },
   session: {
     v1: {

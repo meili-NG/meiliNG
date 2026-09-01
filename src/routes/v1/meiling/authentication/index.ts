@@ -1,10 +1,19 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { FastifyInstance, FastifyPluginOptions, preHandlerAsyncHookHandler } from 'fastify';
 import { meilingV1SessionAuthnIssueHandler } from './issue';
 import { meilingV1SessionAuthnVerifyHandler } from './verify';
 
-export function meilingV1SessionAuthnPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
-  app.post('/issue', meilingV1SessionAuthnIssueHandler);
-  app.post('/verify', meilingV1SessionAuthnVerifyHandler);
+interface MeilingV1SessionAuthnPluginOptions extends FastifyPluginOptions {
+  authenticationRateLimit: preHandlerAsyncHookHandler;
+  recoveryRateLimit: preHandlerAsyncHookHandler;
+}
+
+export function meilingV1SessionAuthnPlugin(
+  app: FastifyInstance,
+  opts: MeilingV1SessionAuthnPluginOptions,
+  done: () => void,
+): void {
+  app.post('/issue', { preHandler: opts.recoveryRateLimit }, meilingV1SessionAuthnIssueHandler);
+  app.post('/verify', { preHandler: opts.authenticationRateLimit }, meilingV1SessionAuthnVerifyHandler);
 
   done();
 }

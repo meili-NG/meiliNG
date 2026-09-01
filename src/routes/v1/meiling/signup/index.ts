@@ -3,8 +3,16 @@ import { Meiling } from '../../../../common';
 import { Utils } from '../../../../common/';
 import config from '../../../../resources/config';
 import { signupHandler } from './signup';
+import { rateLimitCacheSize, rateLimitDefaults } from '../../../../common/fastify';
 
 export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
+  const signupConfig = config.meiling.rateLimit?.signup ?? rateLimitDefaults.signup;
+  const signupRateLimit = app.rateLimit({
+    max: signupConfig.max,
+    timeWindow: signupConfig.timeframe * 1000,
+    cache: rateLimitCacheSize,
+  });
+
   app.addHook('onRequest', (req, rep, next) => {
     if (!config.meiling.signup.enabled) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_IMPLEMENTED, 'Signup is disabled');
@@ -17,6 +25,7 @@ export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, d
   app.post(
     '/',
     {
+      preHandler: signupRateLimit,
       schema: {
         description: 'Endpoint to sign-up an account',
         tags: ['meiling'],
@@ -50,6 +59,10 @@ export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, d
             properties: {
               success: { type: 'boolean' },
             },
+          },
+          429: {
+            description: 'Rate limit exceeded',
+            $ref: 'MeilingV1Error#',
           },
         },
       },
