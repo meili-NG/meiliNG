@@ -36,10 +36,22 @@ export async function validatePGPSign(
   return recoveredChallenge.trim() == challenge.trim() && isSignaturesValid;
 }
 
+async function persistWebAuthnCounter(authenticationId: string, newCounter: number): Promise<void> {
+  // Compare and update in one statement so a late response cannot lower the
+  // counter. Change only the counter to preserve other credential data.
+  await getPrismaClient().$executeRaw`
+    UPDATE \`Authentication\`
+    SET \`data\` = JSON_SET(\`data\`, '$.data.key.counter', ${newCounter})
+    WHERE \`id\` = ${authenticationId}
+      AND CAST(JSON_EXTRACT(\`data\`, '$.data.key.counter') AS UNSIGNED) < ${newCounter}
+  `;
+}
+
 export async function validateWebAuthn(
   challenge: string,
   challengeResponse: any,
   data: AuthenticationWebAuthnObject,
+  authenticationId?: string,
 ): Promise<boolean> {
   const hostnames = config.frontend.url
     .map((n) => {
@@ -66,41 +78,15 @@ export async function validateWebAuthn(
   });
 
   if (res.verified) {
-    // TODO: mitigate very unlikely situation when webauthn id collision occurrs.
-    const updateTargets = await getPrismaClient().authentication.findMany({
-      where: {
-        data: {
-          path: '$.data.key.id',
-          equals: data.data.key.id,
-        },
-        method: 'WEBAUTHN',
-      },
-    });
-
-    const affected = updateTargets.filter((n) => {
-      const localData = n.data as unknown as AuthenticationWebAuthnObject;
-      if (localData.data.key.counter === data.data.key.counter) {
-        return true;
-      }
-    });
-
-    if (affected.length > 1) {
-      // oops. this is bad.
-      throw new Error('authentication processing error');
+    // The caller already resolved the exact Authentication row for this
+    // credential (scoped to the user), so update it directly by id. Re-querying
+    // by credential id here used to break in two ways: a concurrent
+    // authentication could bump the counter first and leave nothing matching,
+    // and the lookup was not scoped to a user so a credential id shared across
+    // users could update the wrong row.
+    if (authenticationId) {
+      await persistWebAuthnCounter(authenticationId, res.authenticationInfo.newCounter);
     }
-
-    const toUpdate = affected[0];
-    const updateData = toUpdate.data as unknown as AuthenticationWebAuthnObject;
-
-    updateData.data.key.counter = res.authenticationInfo.newCounter;
-    await getPrismaClient().authentication.update({
-      where: {
-        id: toUpdate.id,
-      },
-      data: {
-        data: updateData as any,
-      },
-    });
 
     return true;
   }

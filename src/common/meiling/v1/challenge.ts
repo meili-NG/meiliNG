@@ -119,6 +119,7 @@ export async function verifyChallenge(
   challenge: string | undefined,
   challengeResponse: any,
   data?: AuthenticationJSONObject,
+  authenticationId?: string,
 ): Promise<boolean> {
   try {
     switch (signinMethod) {
@@ -129,7 +130,12 @@ export async function verifyChallenge(
           (data as AuthenticationPGPSSHKeyObject).data.key,
         );
       case ExtendedAuthMethods.WEBAUTHN:
-        return await validateWebAuthn(challenge as string, challengeResponse, data as AuthenticationWebAuthnObject);
+        return await validateWebAuthn(
+          challenge as string,
+          challengeResponse,
+          data as AuthenticationWebAuthnObject,
+          authenticationId,
+        );
       case ExtendedAuthMethods.SMS:
       case ExtendedAuthMethods.EMAIL:
         return (challenge as string).trim() === challengeResponse.trim();

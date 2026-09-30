@@ -304,6 +304,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
   }
 
   let data = undefined;
+  let authenticationId: string | undefined = undefined;
 
   if (passwordReset.method === Meiling.V1.Interfaces.ExtendedAuthMethods.WEBAUTHN) {
     const idRaw = body.data.challengeResponse.id;
@@ -325,6 +326,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
         },
       },
     });
+    authenticationId = data?.id;
     data = data?.data;
   }
 
@@ -346,6 +348,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     passwordReset.challenge,
     body.data.challengeResponse,
     data as unknown as AuthenticationJSONObject | undefined,
+    authenticationId,
   );
   if (!isValid) {
     passwordReset.failedAttempts = failedAttempts + 1;

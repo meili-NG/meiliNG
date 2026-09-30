@@ -514,6 +514,7 @@ please request this endpoint without challengeResponse field to request challeng
           challenge,
           challengeResponse,
           webauthn.data as unknown as AuthenticationJSONObject,
+          webauthn.id,
         ),
       );
       authMethodCheckUsers.push(webauthn.userId);
