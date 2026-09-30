@@ -4,6 +4,7 @@ import { BaridegiLogType, sendBaridegiLog } from '../../../../common/event/barid
 import config from '../../../../resources/config';
 import { getPrismaClient } from '../../../../resources/prisma';
 import { Meiling } from '../../../../common';
+import * as Utils from '../../../../common/utils';
 
 const MAX_VERIFICATION_ATTEMPTS = 5;
 
@@ -52,7 +53,7 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
 
     if (body.code) {
       codeStatus = session.authenticationStatus.phone;
-      verified = session.authenticationStatus.phone.challenge.challenge === body.code;
+      verified = Utils.timingSafeEqualString(session.authenticationStatus.phone.challenge.challenge, body.code);
       createdAt = session.authenticationStatus.phone.challenge.challengeCreatedAt;
     }
   } else if (body.type === 'email') {
@@ -68,7 +69,7 @@ export async function meilingV1SessionAuthnVerifyHandler(req: FastifyRequest, re
       }
 
       codeStatus = session.authenticationStatus.email;
-      verified = session.authenticationStatus.email.challenge.challenge == code;
+      verified = Utils.timingSafeEqualString(session.authenticationStatus.email.challenge.challenge, code);
       createdAt = session.authenticationStatus.email.challenge.challengeCreatedAt;
     } else if (token) {
       if (typeof token !== 'string')

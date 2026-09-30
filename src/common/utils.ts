@@ -130,6 +130,25 @@ export function getCryptoSafeInteger(bound?: number): number {
   return array[0] % bound;
 }
 
+/**
+ * Compares two secrets without leaking their contents through timing.
+ *
+ * `crypto.timingSafeEqual` throws when the buffers differ in length, so the
+ * lengths are checked first. That check is itself not constant-time, meaning
+ * the length of a secret can still be observed; only the contents are
+ * protected. Callers should treat secret length as non-sensitive.
+ */
+export function timingSafeEqualString(a?: string | null, b?: string | null): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+
+  const left = Buffer.from(a, 'utf-8');
+  const right = Buffer.from(b, 'utf-8');
+
+  if (left.length !== right.length) return false;
+
+  return crypto.timingSafeEqual(left, right);
+}
+
 export function checkBase64(string: string) {
   let convertedString = string;
   if (string.includes('-') || string.includes('_')) {

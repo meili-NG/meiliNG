@@ -112,7 +112,7 @@ export async function oAuth2AuthorizationCodeHandler(req: FastifyRequest, rep: F
         }
 
         if (challenge.method === 'plain') {
-          if (challenge.challenge !== code_verifier) {
+          if (!Utils.timingSafeEqualString(challenge.challenge, code_verifier)) {
             Meiling.OAuth2.Error.sendOAuth2Error(
               rep,
               Meiling.OAuth2.Error.ErrorType.INVALID_GRANT,
@@ -124,7 +124,7 @@ export async function oAuth2AuthorizationCodeHandler(req: FastifyRequest, rep: F
           const verifierHashed = crypto.createHash('sha256').update(code_verifier).digest('base64');
           const codeVerifierBase64 = Buffer.from(challenge.challenge, 'base64').toString('base64');
 
-          if (codeVerifierBase64 !== verifierHashed) {
+          if (!Utils.timingSafeEqualString(codeVerifierBase64, verifierHashed)) {
             Meiling.OAuth2.Error.sendOAuth2Error(
               rep,
               Meiling.OAuth2.Error.ErrorType.INVALID_GRANT,

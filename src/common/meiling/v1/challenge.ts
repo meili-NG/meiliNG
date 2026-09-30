@@ -8,6 +8,7 @@ import {
   AuthenticationWebAuthnObject,
 } from '../identity/user';
 import { validateOTP, validatePGPSign, validateWebAuthn } from '../authentication/validate';
+import * as Utils from '../../utils';
 import config from '../../../resources/config';
 import { NodeEnvironment } from '../../../interface';
 
@@ -138,7 +139,7 @@ export async function verifyChallenge(
         );
       case ExtendedAuthMethods.SMS:
       case ExtendedAuthMethods.EMAIL:
-        return (challenge as string).trim() === challengeResponse.trim();
+        return Utils.timingSafeEqualString((challenge as string).trim(), (challengeResponse as string).trim());
       case ExtendedAuthMethods.OTP:
         return validateOTP(challengeResponse, (data as AuthenticationOTPObject).data.secret);
     }

@@ -59,7 +59,7 @@ export async function verifySecret(clientId: string, clientSecret?: string): Pro
       return true;
     }
   } else {
-    return secrets.filter((n) => n.secret === clientSecret).length > 0;
+    return secrets.filter((n) => Utils.timingSafeEqualString(n.secret, clientSecret)).length > 0;
   }
 
   return false;
