@@ -22,7 +22,7 @@ export async function validateCommonRequest(
     return Meiling.OAuth2.Error.ErrorType.INVALID_CLIENT;
   }
 
-  if (!Meiling.OAuth2.Client.verifySecret(clientId, clientSecret)) {
+  if (!(await Meiling.OAuth2.Client.verifySecret(clientId, clientSecret))) {
     return Meiling.OAuth2.Error.ErrorType.INVALID_CLIENT;
   }
 
