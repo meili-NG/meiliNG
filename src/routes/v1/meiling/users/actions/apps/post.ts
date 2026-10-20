@@ -1,4 +1,4 @@
-import { Group as GroupModel, Permission } from '@prisma/client';
+import { Permission } from '@prisma/client';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { getUserFromActionRequest } from '..';
 import { Meiling, Utils } from '../../../../../../common';
@@ -28,6 +28,27 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
   if (!Utils.isNotBlank(body?.name, body?.image, body?.privacy, body?.terms)) {
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST);
     return;
+  }
+
+  if (!Array.isArray(body?.accessControl?.permissions)) {
+    throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid permissions');
+  }
+
+  const userList = body.accessControl.users;
+  const groupList = body.accessControl.groups;
+
+  if (
+    userList !== undefined &&
+    (!Array.isArray(userList) || userList.some((user) => typeof user !== 'string' || user.trim().length === 0))
+  ) {
+    throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid users');
+  }
+
+  if (
+    groupList !== undefined &&
+    (!Array.isArray(groupList) || groupList.some((group) => typeof group !== 'string' || group.trim().length === 0))
+  ) {
+    throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid groups');
   }
 
   const owner = await getUserFromActionRequest(req);
@@ -67,9 +88,6 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
     return;
   }
 
-  const userList = body.accessControl?.users;
-  const groupList = body.accessControl?.groups;
-
   let authUserDB:
     | {
         id: string;
@@ -83,40 +101,30 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
     | undefined = undefined;
 
   if (userList && userList.length > 0) {
-    const authUsers: Meiling.Identity.User.UserInfoObject[] = [];
-    const userPromises = [];
+    const authUsers = await Promise.all(userList.map((user) => Meiling.Identity.User.getInfo(user)));
 
-    for (const user of userList) {
-      userPromises.push(Meiling.Identity.User.getInfo(user));
-    }
+    authUserDB = authUsers.map((user) => {
+      if (!user) {
+        throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid users');
+      }
 
-    const usersTmp = await Promise.all(userPromises);
-    authUsers.push(...(usersTmp.filter((n) => n !== undefined) as Meiling.Identity.User.UserInfoObject[]));
-
-    authUserDB = [];
-    authUsers.forEach((n) => {
-      authUserDB?.push({
-        id: n.id,
-      });
+      return {
+        id: user.id,
+      };
     });
   }
 
   if (groupList && groupList.length > 0) {
-    const authGroups: GroupModel[] = [];
-    const groupPromises = [];
+    const authGroups = await Promise.all(groupList.map((group) => Meiling.Identity.Group.getInfo(group)));
 
-    for (const group of groupList) {
-      groupPromises.push(Meiling.Identity.Group.getInfo(group));
-    }
+    authGroupDB = authGroups.map((group) => {
+      if (!group) {
+        throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid groups');
+      }
 
-    const groups = await Promise.all(groupPromises);
-    authGroups.push(...(groups.filter((n) => n !== undefined) as GroupModel[]));
-
-    authGroupDB = [];
-    authGroups.forEach((n) => {
-      authGroupDB?.push({
-        id: n.id,
-      });
+      return {
+        id: group.id,
+      };
     });
   }
 
