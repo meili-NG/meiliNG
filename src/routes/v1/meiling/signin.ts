@@ -145,7 +145,7 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
 
       const user = await Meiling.Identity.User.getBasicInfo(userId);
 
-      if (user === null) {
+      if (!user) {
         throw new Meiling.V1.Error.MeilingError(
           Meiling.V1.Error.ErrorType.TWO_FACTOR_AUTHENTICATION_REQUEST_NOT_GENERATED,
           'two factor authentication request session does not valid userId session. please redo your login.',
