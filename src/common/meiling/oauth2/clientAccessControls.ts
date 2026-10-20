@@ -41,7 +41,7 @@ export async function checkUsers(acl: OAuthClientAccessControls, user: UserModel
       where: {
         oAuthAccessControls: {
           some: {
-            id: acl.id,
+            id: acl.userAclId,
           },
         },
       },
@@ -50,7 +50,7 @@ export async function checkUsers(acl: OAuthClientAccessControls, user: UserModel
       where: {
         oAuthAccessControls: {
           some: {
-            id: acl.id,
+            id: acl.userAclId,
           },
         },
       },
@@ -84,7 +84,7 @@ export async function getAccessControlRules(acl?: OAuthClientAccessControls | nu
       where: {
         oAuthAccessControls: {
           some: {
-            id: acl.id,
+            id: acl.userAclId,
           },
         },
       },
@@ -93,7 +93,7 @@ export async function getAccessControlRules(acl?: OAuthClientAccessControls | nu
       where: {
         oAuthAccessControls: {
           some: {
-            id: acl.id,
+            id: acl.userAclId,
           },
         },
       },

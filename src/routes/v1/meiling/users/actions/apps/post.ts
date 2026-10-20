@@ -62,7 +62,7 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
   }
 
   const permissionCheck = await Promise.all(permissionsPromises);
-  if (permissionCheck.indexOf(null) >= 0) {
+  if (permissionCheck.some((permission) => !permission?.isAvailable)) {
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid permissions');
     return;
   }
@@ -135,18 +135,19 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
               };
             }),
           },
-          userAccessControls: !Utils.isValidValue(authUserDB, authGroupDB)
-            ? undefined
-            : {
-                create: {
-                  authorizedUsers: {
-                    connect: authUserDB,
-                  },
-                  authorizedGroups: {
-                    connect: authGroupDB,
+          userAccessControls:
+            authUserDB === undefined && authGroupDB === undefined
+              ? undefined
+              : {
+                  create: {
+                    authorizedUsers: {
+                      connect: authUserDB,
+                    },
+                    authorizedGroups: {
+                      connect: authGroupDB,
+                    },
                   },
                 },
-              },
         },
       },
       owners: {
