@@ -246,13 +246,12 @@ export function isValidByType(type: OAuthTokenType, issuedAt: Date): boolean {
 }
 
 export async function isValid(token: string, type?: OAuthTokenType): Promise<boolean> {
-  const data = await getData(token);
+  const data = await getData(token, type);
   if (!data) return false;
 
   const issuedAt = new Date(data.issuedAt);
-  type = data.type;
 
-  return isValidByType(type, issuedAt);
+  return isValidByType(data.type, issuedAt);
 }
 
 export async function serialize(
