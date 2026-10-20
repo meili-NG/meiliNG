@@ -6,7 +6,7 @@ const userSessionsAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptio
   app.get('/', async (req, rep) => {
     const uuid = (req.params as { uuid: string }).uuid;
 
-    const user = await Meiling.Identity.User.getDetailedInfo(uuid);
+    const user = await Meiling.Identity.User.getDetailedInfo(uuid, { includeInactive: true });
     if (!user) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND, 'User was not found');
     }

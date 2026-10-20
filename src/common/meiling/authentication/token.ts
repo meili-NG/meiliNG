@@ -250,8 +250,15 @@ export async function isValid(token: string, type?: OAuthTokenType): Promise<boo
   if (!data) return false;
 
   const issuedAt = new Date(data.issuedAt);
+  if (!isValidByType(data.type, issuedAt)) return false;
 
-  return isValidByType(data.type, issuedAt);
+  if (data.authorizationId) {
+    const authorization = await OAuth2.ClientAuthorization.getById(data.authorizationId);
+    if (!authorization) return false;
+    if (authorization.userId && !(await Identity.User.getBasicInfo(authorization.userId))) return false;
+  }
+
+  return true;
 }
 
 export async function serialize(

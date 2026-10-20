@@ -37,7 +37,7 @@ const internalAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, 
           (
             await getPrismaClient().user.findMany({})
           ).map(async (n) => ({
-            ...(await Meiling.Identity.User.getDetailedInfo(n)),
+            ...(await Meiling.Identity.User.getDetailedInfo(n, { includeInactive: true })),
           })),
         ),
       },

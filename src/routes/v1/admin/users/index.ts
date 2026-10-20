@@ -94,7 +94,7 @@ const usersAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, don
     rep.send(
       await Promise.all(
         users.map(async (user) => {
-          return await Meiling.Identity.User.getDetailedInfo(user, { includeDeleted: true });
+          return await Meiling.Identity.User.getDetailedInfo(user, { includeDeleted: true, includeInactive: true });
         }),
       ),
     );
@@ -128,7 +128,7 @@ const usersAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, don
       },
     });
 
-    rep.send(await Meiling.Identity.User.getDetailedInfo(user, { includeDeleted: true }));
+    rep.send(await Meiling.Identity.User.getDetailedInfo(user, { includeDeleted: true, includeInactive: true }));
   });
 
   app.get('/count', async (req, rep) => {
@@ -169,7 +169,7 @@ const userAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, done
   app.addHook('onRequest', async (req, rep) => {
     const uuid = (req.params as { uuid: string }).uuid;
 
-    const user = await Meiling.Identity.User.getDetailedInfo(uuid, { includeDeleted: true });
+    const user = await Meiling.Identity.User.getDetailedInfo(uuid, { includeDeleted: true, includeInactive: true });
     if (!user) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND, 'User was not found');
     }
@@ -178,7 +178,7 @@ const userAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, done
   app.get('/', async (req, rep) => {
     const uuid = (req.params as { uuid: string }).uuid;
 
-    const user = await Meiling.Identity.User.getDetailedInfo(uuid, { includeDeleted: true });
+    const user = await Meiling.Identity.User.getDetailedInfo(uuid, { includeDeleted: true, includeInactive: true });
     if (!user) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND, 'User was not found');
     }
@@ -192,7 +192,7 @@ const userAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions, done
     const uuid = (req.params as { uuid: string }).uuid;
     const body = req.body as any;
 
-    const user = await Meiling.Identity.User.getInfo(uuid, { includeDeleted: true });
+    const user = await Meiling.Identity.User.getInfo(uuid, { includeDeleted: true, includeInactive: true });
     if (!user) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND, 'User was not found');
     }

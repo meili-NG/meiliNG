@@ -39,7 +39,7 @@ const userAuthnsAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions
 
   app.post('/', async (req, rep) => {
     const uuid = (req.params as { uuid: string }).uuid;
-    const user = await Meiling.Identity.User.getInfo(uuid);
+    const user = await Meiling.Identity.User.getInfo(uuid, { includeInactive: true });
 
     if (!user) throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND, 'missing user');
 
@@ -97,7 +97,7 @@ const userAuthnAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions,
 
   app.put('/', async (req, rep) => {
     const uuid = (req.params as { uuid: string }).uuid;
-    const user = await Meiling.Identity.User.getInfo(uuid);
+    const user = await Meiling.Identity.User.getInfo(uuid, { includeInactive: true });
     const authnId = (req.params as { authnId: string }).authnId;
 
     const authn = await getPrismaClient().authentication.findFirst({

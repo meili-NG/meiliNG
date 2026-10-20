@@ -35,6 +35,11 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     }
 
     const uuid = session.passwordReset.passwordResetUser;
+    const user = await Meiling.Identity.User.getBasicInfo(uuid);
+    if (!user) {
+      throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.WRONG_USERNAME, 'no user was found!');
+    }
+
     await getPrismaClient().authentication.deleteMany({
       where: {
         method: 'PASSWORD',

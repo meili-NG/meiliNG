@@ -7,7 +7,7 @@ import {
   Prisma,
   User,
 } from '@prisma/client';
-import { Authentication } from '..';
+import { Authentication, Identity } from '..';
 import { getPrismaClient } from '../../../resources/prisma';
 
 // TODO: OPTIMIZE
@@ -171,13 +171,7 @@ export async function getUser(authorization: OAuthClientAuthorization | string):
   if (!data) return;
   if (!data.userId) return;
 
-  const user = await getPrismaClient().user.findUnique({
-    where: {
-      id: data.userId,
-    },
-  });
-
-  return user;
+  return Identity.User.getBasicInfo(data.userId);
 }
 
 export async function createToken(

@@ -503,10 +503,6 @@ export async function login(req: FastifyRequest, user: UserModel | string, remem
     }
 
     const userData = await Meiling.Identity.User.getBasicInfo(user);
-    if (userData === null || userData === undefined) {
-      return;
-    }
-
     if (!userData?.isActive) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.SIGNIN_FAILED, 'signin failed');
     }
@@ -538,7 +534,7 @@ export async function logout(req: FastifyRequest, user?: UserModel | string): Pr
       if (session.user === undefined) {
         session.user = [];
       } else {
-        const userData = await Meiling.Identity.User.getBasicInfo(user);
+        const userData = await Meiling.Identity.User.getBasicInfo(user, { includeInactive: true });
 
         if (userData === null || userData === undefined) {
           return;

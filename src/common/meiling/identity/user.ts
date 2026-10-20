@@ -71,6 +71,7 @@ interface AuthenticationEmailSMSObject {
 
 interface UserQueryOptions {
   includeDeleted?: boolean;
+  includeInactive?: boolean;
 }
 
 export function getUserId(user: UserModel | string) {
@@ -148,6 +149,7 @@ export async function getBasicInfo(
   const userDatabase = await getPrismaClient().user.findFirst({
     where: {
       id: getUserId(user),
+      isActive: queryOptions?.includeInactive ? undefined : true,
       ...prismaQuery,
     },
   });
@@ -483,11 +485,15 @@ export async function getClientAuthorizedPermissions(user: UserModel | string, c
   return Utils.getUnique(permissions, (a, b) => a.name === b.name);
 }
 
-export async function findByUsername(username: string): Promise<UserModel[]> {
+export async function findByUsername(
+  username: string,
+  queryOptions?: Pick<UserQueryOptions, 'includeInactive'>,
+): Promise<UserModel[]> {
   if (typeof username !== 'string') return [];
   return await getPrismaClient().user.findMany({
     where: {
       username: username.toLowerCase(),
+      isActive: queryOptions?.includeInactive ? undefined : true,
     },
   });
 }
@@ -508,10 +514,11 @@ export async function findByEmail(email: string, verified: boolean | undefined =
       n.userId === undefined || n.userId === null
         ? undefined
         : getPrismaClient().user.findFirst({
-          where: {
-            id: n.userId,
-          },
-        }),
+            where: {
+              id: n.userId,
+              isActive: true,
+            },
+          }),
     )
     .filter((n) => n !== undefined && n !== null);
 

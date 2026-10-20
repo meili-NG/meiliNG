@@ -62,13 +62,13 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
     return;
   }
 
-  const user = await Meiling.Identity.User.findByUsername(username);
+  const user = await Meiling.Identity.User.findByUsername(username, { includeInactive: true });
   if (user.length > 0) {
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.EXISTING_USERNAME);
     return;
   }
 
-  const userByEmail = await Meiling.Identity.User.findByUsername(email);
+  const userByEmail = await Meiling.Identity.User.findByUsername(email, { includeInactive: true });
   if (userByEmail.length > 0) {
     throw new Meiling.V1.Error.MeilingError(
       Meiling.V1.Error.ErrorType.EXISTING_USERNAME,
