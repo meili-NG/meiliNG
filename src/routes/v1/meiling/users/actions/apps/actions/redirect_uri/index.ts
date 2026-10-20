@@ -226,14 +226,21 @@ export function appRedirectURIPlugin(app: FastifyInstance, opts: FastifyPluginOp
       return;
     }
 
-    await getPrismaClient().oAuthClientRedirectUris.update({
+    const updated = await getPrismaClient().oAuthClientRedirectUris.updateMany({
       where: {
         id: (req.params as any).uuid,
+        client: {
+          id: req.client.id,
+        },
       },
       data: {
         redirectUri,
       },
     });
+
+    if (updated.count === 0) {
+      throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND);
+    }
 
     rep.send({
       success: true,
