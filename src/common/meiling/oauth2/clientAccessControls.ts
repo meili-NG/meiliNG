@@ -67,8 +67,8 @@ export async function checkUsers(acl: OAuthClientAccessControls, user: UserModel
 }
 
 export interface ClientACLRules {
-  users: UserModel[];
-  groups: Group[];
+  users: Pick<UserModel, 'id'>[];
+  groups: Pick<Group, 'id'>[];
 }
 
 export async function getAccessControlRules(acl?: OAuthClientAccessControls | null): Promise<ClientACLRules> {
@@ -81,6 +81,9 @@ export async function getAccessControlRules(acl?: OAuthClientAccessControls | nu
 
   const [users, groups] = await Promise.all([
     getPrismaClient().user.findMany({
+      select: {
+        id: true,
+      },
       where: {
         oAuthAccessControls: {
           some: {
@@ -90,6 +93,9 @@ export async function getAccessControlRules(acl?: OAuthClientAccessControls | nu
       },
     }),
     getPrismaClient().group.findMany({
+      select: {
+        id: true,
+      },
       where: {
         oAuthAccessControls: {
           some: {
