@@ -379,10 +379,10 @@ export function sanitizeMetadata(metadata?: any, _scopes: string[] | boolean = [
               break;
             }
           }
+        }
 
-          if (!isAuthorized) {
-            return;
-          }
+        if (!isAuthorized) {
+          return;
         }
       }
 
@@ -761,7 +761,10 @@ export async function createIDToken(
 
   const profilePerm = permissions && permissions.includes('profile');
   const profileDetail = {
-    birthdate: data.birthday ? data.birthday : undefined,
+    nickname: data.name,
+    preferred_username: data.username,
+    picture: data.profileUrl,
+    birthdate: data.birthday ? Utils.convertDateToISO8601Date(data.birthday) : undefined,
   };
 
   const emailPerm = permissions && permissions.includes('email');
@@ -779,15 +782,11 @@ export async function createIDToken(
     exp: Math.floor(new Date(new Date().getTime() + 1000 * config.token.invalidate.openid).getTime() / 1000),
     ...(namePerm ? nameDetail : {}),
     ...(profilePerm ? profileDetail : {}),
-    nickname: data.name,
-    preferred_username: data.username,
-    picture: data.profileUrl,
     email: emailPerm && email ? email.email : undefined,
     email_verified: emailPerm && email ? email.verified : undefined,
     phone: phonePerm && phone ? phone.phone : undefined,
     phone_verified: phonePerm && phone ? true : undefined,
     metadata: data.metadata ? sanitizeMetadata(data.metadata, permissions) : undefined,
-    birthdate: data.birthday ? Utils.convertDateToISO8601Date(data.birthday) : undefined,
   };
 
   if (config.openid.jwt.privateKey?.key !== undefined) {

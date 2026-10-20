@@ -289,14 +289,10 @@ export async function getUnauthorizedPermissions(
       authPromises.push(ClientAuthorization.getAuthorizedPermissions(authorization));
     }
 
-    let minimumUnauthorizedPermissions: string[] | undefined = undefined;
+    let minimumUnauthorizedPermissions = permissions.map((n) => (typeof n === 'string' ? n : n.name));
 
     const data = await Promise.all(authPromises);
     for (const datum of data) {
-      if (minimumUnauthorizedPermissions === undefined) {
-        minimumUnauthorizedPermissions = datum.map((n) => n.name);
-      }
-
       const unauthorizedPermissions = permissions.filter((p) => {
         const name = typeof p === 'string' ? p : p.name;
         return datum.filter((q) => q.name === name).length === 0;
@@ -305,10 +301,6 @@ export async function getUnauthorizedPermissions(
       if (minimumUnauthorizedPermissions.length > unauthorizedPermissions.length) {
         minimumUnauthorizedPermissions = unauthorizedPermissions.map((n) => (typeof n === 'string' ? n : n.name));
       }
-    }
-
-    if (minimumUnauthorizedPermissions === undefined) {
-      minimumUnauthorizedPermissions = permissions.map((n) => (typeof n === 'string' ? n : n.name));
     }
 
     return minimumUnauthorizedPermissions;
