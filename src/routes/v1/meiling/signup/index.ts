@@ -22,7 +22,6 @@ export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, d
         tags: ['meiling'],
         summary: 'Signup',
         security: [{ sessionV1: [] }],
-        params: {},
         body: {
           type: 'object',
           properties: {

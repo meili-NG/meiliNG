@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { Meiling, Utils } from '../../../common';
 import { sentryErrorHandler } from '../../../common/sentry/tracer';
@@ -25,7 +25,7 @@ const isAdminToken = (tokens: string[], candidate: string): boolean => {
 };
 
 const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void => {
-  app.setErrorHandler(async (_err, req, rep) => {
+  app.setErrorHandler<FastifyError>(async (_err, req, rep) => {
     const err = _err as Error;
 
     if ((err as Meiling.V1.Error.MeilingError)._isMeiling === true) {
@@ -57,6 +57,7 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
         : config?.admin?.frontend?.url
         ? config.admin.frontend.url
         : config.frontend.url,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
 
   app.addHook('onRequest', (req, rep, next) => {

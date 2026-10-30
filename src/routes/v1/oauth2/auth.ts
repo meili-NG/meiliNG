@@ -21,5 +21,5 @@ export function oAuth2AuthHandler(req: FastifyRequest, rep: FastifyReply): void 
 
   const bestLogin = config.frontend.url[0];
 
-  rep.redirect(302, bestLogin + '/auth' + str);
+  rep.redirect(bestLogin + '/auth' + str, 302);
 }

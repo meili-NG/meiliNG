@@ -11,6 +11,7 @@ import { oAuth2UserInfoHandler } from './userinfo';
 function oAuth2V1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
   app.register(fastifyCors, {
     origin: '*',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
 
   app.get('/', (req, rep) => {

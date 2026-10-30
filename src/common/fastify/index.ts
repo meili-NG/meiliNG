@@ -1,13 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUI from '@fastify/swagger-ui';
 import { nameStylized } from '..';
 import { info as packageJson } from '../../resources/package';
 import config from '../../resources/config';
 
-// TODO: Typescript sucks. fix later.
-export function setupSwaggerUI(app: any) {
+export function setupSwaggerUI(app: FastifyInstance) {
   app.register(fastifySwagger, {
-    routePrefix: '/docs',
     openapi: {
       info: {
         title: nameStylized,
@@ -34,7 +33,10 @@ export function setupSwaggerUI(app: any) {
       },
     },
     hideUntagged: true,
-    exposeRoute: true,
+  });
+
+  app.register(fastifySwaggerUI, {
+    routePrefix: '/docs',
   });
 
   app.addSchema({

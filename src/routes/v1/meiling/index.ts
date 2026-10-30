@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
+import { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { NodeEnvironment } from '../../../interface';
 import config from '../../../resources/config';
@@ -37,7 +37,7 @@ function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done:
     },
   });
 
-  app.setErrorHandler(async (_err, req, rep) => {
+  app.setErrorHandler<FastifyError>(async (_err, req, rep) => {
     const err = _err as Error;
 
     if ((err as Meiling.V1.Error.MeilingError)._isMeiling === true) {
@@ -64,6 +64,7 @@ function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done:
 
   app.register(fastifyCors, {
     origin: config.node.environment === NodeEnvironment.Development ? '*' : config.frontend.url,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
 
   app.get('/', (req, rep) => {

@@ -39,7 +39,7 @@ function convertReq4Sentry(req: FastifyRequest, keys: string[] = DEFAULT_REQUEST
 
   const headers = req.headers || {};
   const method = req.method;
-  const host = req.hostname;
+  const host = req.host;
   const protocol = req.protocol;
   const originalUrl = req.url.split('?')[0];
   const absoluteUrl = protocol + '://' + host + originalUrl;

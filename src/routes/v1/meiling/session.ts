@@ -11,7 +11,6 @@ export function sessionPlugin(app: FastifyInstance, opts: FastifyPluginOptions, 
         tags: ['meiling'],
         summary: 'Issue a new Session',
         security: [{}, { sessionV1: [] }],
-        params: {},
         response: {
           200: {
             description: 'Token is Valid',
