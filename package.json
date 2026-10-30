@@ -17,7 +17,7 @@
     "@simplewebauthn/server": "^5.4.0",
     "@xmldom/xmldom": "^0.8.4",
     "ansi-regex": "^6.0.1",
-    "axios": "^0.21.2",
+    "axios": "^1.21.0",
     "bcryptjs": "^2.4.3",
     "chalk": "^4.1.0",
     "dotenv": "^8.2.0",
