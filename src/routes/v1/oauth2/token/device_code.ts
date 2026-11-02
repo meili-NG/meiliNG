@@ -4,6 +4,7 @@ import { isSentryAvailable } from '../../../../common/sentry/tracer';
 import { parseClientInfo } from '../common';
 import * as Sentry from '@sentry/node';
 import { FastifyRequestWithUser } from '../../meiling';
+import { getPrismaClient } from '../../../../resources/prisma';
 
 export async function oAuth2DeviceCodeHandler(req: FastifyRequest, rep: FastifyReply): Promise<void> {
   const result = parseClientInfo(req);
@@ -94,6 +95,13 @@ export async function oAuth2DeviceCodeHandler(req: FastifyRequest, rep: FastifyR
 
   const scope = permissions.map((p) => p.name).join(' ');
   const scopes = scope.split(' ');
+
+  // device code is single-use: consume it atomically so concurrent replays fail
+  const { count } = await getPrismaClient().oAuthToken.deleteMany({ where: { token, type } });
+  if (count === 0) {
+    Meiling.OAuth2.Error.sendOAuth2Error(rep, Meiling.OAuth2.Error.ErrorType.INVALID_GRANT, 'device_code has already been used');
+    return;
+  }
 
   const accessToken = await Meiling.OAuth2.ClientAuthorization.createToken(authorization, 'ACCESS_TOKEN');
   const currentRefreshToken = await Meiling.OAuth2.ClientAuthorization.getToken(authorization, 'REFRESH_TOKEN');
