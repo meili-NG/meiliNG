@@ -164,7 +164,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     }
 
     if (to !== undefined) {
-      if (Meiling.V1.Challenge.isChallengeRateLimited(body.method, session.passwordReset?.challengeCreatedAt)) {
+      if (Meiling.V1.Challenge.isChallengeRateLimited(currentMethod, session.passwordReset?.challengeCreatedAt)) {
         throw new Meiling.V1.Error.MeilingError(
           Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
           'You are rate limited',
@@ -207,7 +207,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     }
 
     await Meiling.V1.Session.setPasswordResetSession(req, {
-      method: body.method,
+      method: currentMethod,
       challenge: challenge,
       challengeCreatedAt: new Date(),
       passwordResetUser: user.id,
@@ -215,7 +215,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     });
 
     const extras = {
-      challenge: Meiling.V1.Challenge.shouldSendChallenge(body.method) ? challenge : undefined,
+      challenge: Meiling.V1.Challenge.shouldSendChallenge(currentMethod) ? challenge : undefined,
 
       // Webauthn only.
       webauthn:
