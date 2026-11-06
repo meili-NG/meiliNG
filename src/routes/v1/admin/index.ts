@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 import { FastifyError, FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
-import { addAuthenticationRateLimitHook } from '../../../common/fastify/authenticationRateLimit';
+import {
+  addAuthenticationRateLimitHook,
+  authenticationRateLimitExposedHeaders,
+} from '../../../common/fastify/authenticationRateLimit';
 import { Meiling, Utils } from '../../../common';
 import { sentryErrorHandler } from '../../../common/sentry/tracer';
 import { NodeEnvironment } from '../../../interface';
@@ -59,6 +62,7 @@ const adminV1Plugin = async (app: FastifyInstance): Promise<void> => {
         ? config.admin.frontend.url
         : config.frontend.url,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+    exposedHeaders: authenticationRateLimitExposedHeaders,
   });
 
   // Unknown paths also run the admin credential check.

@@ -1,6 +1,9 @@
 import { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
-import { addAuthenticationRateLimitHook } from '../../../common/fastify/authenticationRateLimit';
+import {
+  addAuthenticationRateLimitHook,
+  authenticationRateLimitExposedHeaders,
+} from '../../../common/fastify/authenticationRateLimit';
 import { NodeEnvironment } from '../../../interface';
 import config from '../../../resources/config';
 import { appsPlugin } from './apps';
@@ -66,6 +69,7 @@ async function meilingV1Plugin(app: FastifyInstance): Promise<void> {
   await app.register(fastifyCors, {
     origin: config.node.environment === NodeEnvironment.Development ? '*' : config.frontend.url,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+    exposedHeaders: authenticationRateLimitExposedHeaders,
   });
 
   addAuthenticationRateLimitHook(app);

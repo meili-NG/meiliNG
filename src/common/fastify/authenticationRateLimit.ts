@@ -8,6 +8,15 @@ declare module 'fastify' {
   }
 }
 
+// Headers set by @fastify/rate-limit. Browsers can read them cross-origin only
+// when CORS lists them in Access-Control-Expose-Headers.
+export const authenticationRateLimitExposedHeaders = [
+  'Retry-After',
+  'X-RateLimit-Limit',
+  'X-RateLimit-Remaining',
+  'X-RateLimit-Reset',
+];
+
 export async function registerAuthenticationRateLimit(
   app: FastifyInstance,
   options?: ConfigInterface['meiling']['authenticationRateLimit'],

@@ -1,6 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
-import { addAuthenticationRateLimitHook } from '../../../common/fastify/authenticationRateLimit';
+import {
+  addAuthenticationRateLimitHook,
+  authenticationRateLimitExposedHeaders,
+} from '../../../common/fastify/authenticationRateLimit';
 import { oAuth2AuthHandler } from './auth';
 import oAuth2CertsHandler from './certs';
 import { oAuth2DeviceHandler } from './device';
@@ -13,6 +16,7 @@ async function oAuth2V1Plugin(app: FastifyInstance): Promise<void> {
   await app.register(fastifyCors, {
     origin: '*',
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+    exposedHeaders: authenticationRateLimitExposedHeaders,
   });
 
   addAuthenticationRateLimitHook(app);
