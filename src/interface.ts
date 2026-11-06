@@ -56,10 +56,12 @@ export interface ConfigInterface {
     authenticationRateLimit?: {
       maxRequests: number;
       timeframe: number;
+      allowList?: string[];
     };
     oauth2LookupRateLimit?: {
       maxRequests: number;
       timeframe: number;
+      allowList?: string[];
     };
     error: {
       urlFormat: string;
@@ -141,6 +143,7 @@ export interface ConfigInterface {
     rateLimit?: {
       maxRequests: number;
       timeframe: number;
+      allowList?: string[];
     };
   };
 }

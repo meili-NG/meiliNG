@@ -42,15 +42,23 @@ module.exports = {
   meiling: {
     /** The hostname of the meiling, give the public URL origin of this API. */
     hostname: 'https://meiling.stella-api.dev',
-    /** Shared IP limit for authentication requests. Timeframe is in seconds. */
+    /**
+     * Shared IP limit for authentication requests. Timeframe is in seconds.
+     * Requests from IPs in allowList (exact IPv4/IPv6 addresses) bypass this limit.
+     */
     authenticationRateLimit: {
       maxRequests: 60,
       timeframe: 60,
+      allowList: [],
     },
-    /** Separate IP limit for OAuth2 lookups (/v1/oauth2/userinfo, /v1/oauth2/tokeninfo). Timeframe is in seconds. */
+    /**
+     * Separate IP limit for OAuth2 lookups (/v1/oauth2/userinfo, /v1/oauth2/tokeninfo). Timeframe is in seconds.
+     * Requests from IPs in allowList (exact IPv4/IPv6 addresses) bypass this limit.
+     */
     oauth2LookupRateLimit: {
       maxRequests: 600,
       timeframe: 60,
+      allowList: [],
     },
     /** The following URL will be filled with errorcode on error, and sent to user */
     error: {
@@ -157,10 +165,14 @@ module.exports = {
     frontend: {
       url: [],
     },
-    /** Separate IP limit for /v1/admin endpoints. Timeframe is in seconds. */
+    /**
+     * Separate IP limit for /v1/admin endpoints. Timeframe is in seconds.
+     * Requests from IPs in allowList (exact IPv4/IPv6 addresses) bypass this limit.
+     */
     rateLimit: {
       maxRequests: 60,
       timeframe: 60,
+      allowList: [],
     },
   },
 };

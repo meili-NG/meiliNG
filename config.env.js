@@ -10,6 +10,13 @@ if (adminTokens.some((token) => !token)) {
   throw new Error('ADMIN_TOKENS must contain only non-empty tokens');
 }
 
+// Comma separated IPs that bypass a rate limit bucket. Unset or empty means no bypass.
+const parseRateLimitAllowList = (value) =>
+  (value || '')
+    .split(',')
+    .map((ip) => ip.trim())
+    .filter((ip) => ip);
+
 module.exports = {
   node: {
     environment: process.env.NODE_ENV || 'development',
@@ -51,10 +58,12 @@ module.exports = {
     authenticationRateLimit: {
       maxRequests: Number(process.env.AUTHENTICATION_RATE_LIMIT_MAX_REQUESTS ?? 60),
       timeframe: Number(process.env.AUTHENTICATION_RATE_LIMIT_TIMEFRAME ?? 60),
+      allowList: parseRateLimitAllowList(process.env.AUTHENTICATION_RATE_LIMIT_ALLOW_LIST),
     },
     oauth2LookupRateLimit: {
       maxRequests: Number(process.env.OAUTH2_LOOKUP_RATE_LIMIT_MAX_REQUESTS ?? 600),
       timeframe: Number(process.env.OAUTH2_LOOKUP_RATE_LIMIT_TIMEFRAME ?? 60),
+      allowList: parseRateLimitAllowList(process.env.OAUTH2_LOOKUP_RATE_LIMIT_ALLOW_LIST),
     },
     error: {
       urlFormat:
@@ -144,6 +153,7 @@ module.exports = {
     rateLimit: {
       maxRequests: Number(process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS ?? 60),
       timeframe: Number(process.env.ADMIN_RATE_LIMIT_TIMEFRAME ?? 60),
+      allowList: parseRateLimitAllowList(process.env.ADMIN_RATE_LIMIT_ALLOW_LIST),
     },
   },
 };

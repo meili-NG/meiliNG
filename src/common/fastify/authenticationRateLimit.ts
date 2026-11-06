@@ -1,5 +1,6 @@
 import rateLimit, { normalizeIP } from '@fastify/rate-limit';
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { isIP } from 'node:net';
 import { ConfigInterface } from '../../interface';
 
 // true: meiling authentication requests (MeilingV1 error format)
@@ -39,11 +40,43 @@ export const authenticationRateLimitExposedHeaders = [
   'X-RateLimit-Reset',
 ];
 
+// Canonical form of a single address: IPv4-mapped IPv6 becomes IPv4 and IPv6 is
+// compared as a full /128 address. Bucket keys group IPv6 by /64, so the allow
+// list matches the request IP instead of the key to bypass only the listed address.
+function canonicalizeIP(ip: string): string {
+  return normalizeIP(ip, 128);
+}
+
+type AllowListHandler = (req: FastifyRequest) => boolean;
+
+const allowNone: AllowListHandler = () => false;
+
+function createAllowList(name: string, allowList: string[] | undefined): AllowListHandler {
+  if (allowList === undefined) return allowNone;
+  if (!Array.isArray(allowList)) {
+    throw new Error(`${name} rate limit allowList must be an array of IP addresses`);
+  }
+
+  const allowedIPs = new Set<string>();
+  for (const ip of allowList) {
+    const trimmedIP = typeof ip === 'string' ? ip.trim() : '';
+    if (!isIP(trimmedIP)) {
+      throw new Error(`${name} rate limit allowList contains an invalid IP address: ${String(ip)}`);
+    }
+
+    allowedIPs.add(canonicalizeIP(trimmedIP));
+  }
+
+  if (allowedIPs.size === 0) return allowNone;
+
+  return (req) => (req.ip && isIP(req.ip) ? allowedIPs.has(canonicalizeIP(req.ip)) : false);
+}
+
 function resolveRateLimitSettings(
   name: string,
   options: RateLimitSettings,
   defaults: { maxRequests: number; timeframe: number },
-): { max: number; timeWindow: number } {
+): { max: number; timeWindow: number; allowList: AllowListHandler } {
   const maxRequests = options?.maxRequests ?? defaults.maxRequests;
   const timeframe = options?.timeframe ?? defaults.timeframe;
   if (
@@ -59,6 +92,9 @@ function resolveRateLimitSettings(
   return {
     max: maxRequests,
     timeWindow: timeframe * 1000,
+    // Always set, even when nothing is allowed: child buckets otherwise inherit
+    // the authentication bucket's allowList from the plugin's global options.
+    allowList: createAllowList(name, options?.allowList),
   };
 }
 
