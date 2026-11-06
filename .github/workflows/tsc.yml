@@ -34,5 +34,5 @@ jobs:
     - name: 🏗️ Generate Prisma TypeScript d.ts
       run: pnpm generate
     - name: 🏗️ Compile TypeScript
-      run: tsc
+      run: pnpm exec tsc
       
