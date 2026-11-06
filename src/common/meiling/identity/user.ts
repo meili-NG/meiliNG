@@ -135,17 +135,17 @@ export async function getBasicInfo(
   const deletedQuery = queryOptions?.includeDeleted
     ? {}
     : {
-      OR: [
-        {
-          deletedAt: null,
-        },
-        {
-          deletedAt: {
-            gte: new Date(),
+        OR: [
+          {
+            deletedAt: null,
           },
-        },
-      ],
-    };
+          {
+            deletedAt: {
+              gte: new Date(),
+            },
+          },
+        ],
+      };
   const prismaQuery = {
     ...deletedQuery,
   };
@@ -804,9 +804,9 @@ export async function createIDToken(
     const key =
       config.openid.jwt.privateKey.passphrase !== undefined
         ? {
-          key: config.openid.jwt.privateKey.key,
-          passphrase: config.openid.jwt.privateKey.passphrase,
-        }
+            key: config.openid.jwt.privateKey.key,
+            passphrase: config.openid.jwt.privateKey.passphrase,
+          }
         : config.openid.jwt.privateKey.key;
 
     // edge case handling

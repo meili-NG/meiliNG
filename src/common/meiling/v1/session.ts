@@ -348,7 +348,7 @@ export async function setSession(req: FastifyRequest, data?: MeilingSession): Pr
                 try {
                   // not async function since we don't need to wait it to complete.
                   Meiling.Identity.User.updateLastAuthenticated(user.id);
-                } catch (e) { }
+                } catch (e) {}
               }
             }
           }

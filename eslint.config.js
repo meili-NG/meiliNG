@@ -1,37 +1,34 @@
-const {
-    defineConfig,
-    globalIgnores,
-} = require("eslint/config");
+const { defineConfig, globalIgnores } = require('eslint/config');
 
-const tsParser = require("@typescript-eslint/parser");
-const js = require("@eslint/js");
+const tsParser = require('@typescript-eslint/parser');
+const js = require('@eslint/js');
 
-const {
-    FlatCompat,
-} = require("@eslint/eslintrc");
+const { FlatCompat } = require('@eslint/eslintrc');
 
 const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all,
 });
 
-module.exports = defineConfig([{
+module.exports = defineConfig([
+  {
     languageOptions: {
-        parser: tsParser,
-        ecmaVersion: 2020,
-        sourceType: "module",
-        parserOptions: {},
+      parser: tsParser,
+      ecmaVersion: 2020,
+      sourceType: 'module',
+      parserOptions: {},
     },
 
-    extends: compat.extends(
-        "plugin:@typescript-eslint/recommended",
-        "plugin:prettier/recommended",
-    ),
+    extends: compat.extends('plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'),
 
     rules: {
-        "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": ["warn"],
-        "require-await": "warn",
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn'],
+      'require-await': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-require-imports': 'warn',
     },
-}, globalIgnores(["**/dist/"])]);
+  },
+  globalIgnores(['**/dist/']),
+]);

@@ -367,33 +367,33 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
         webauthn:
           signinMethod === ExtendedAuthMethods.WEBAUTHN
             ? {
-              allowCredentials: (
-                await getPrismaClient().authentication.findMany({
-                  where: {
-                    user: {
-                      id: {
-                        in: targetUsers.filter((n) => n !== undefined).map((n) => (n as UserModel).id),
+                allowCredentials: (
+                  await getPrismaClient().authentication.findMany({
+                    where: {
+                      user: {
+                        id: {
+                          in: targetUsers.filter((n) => n !== undefined).map((n) => (n as UserModel).id),
+                        },
                       },
+                      method: 'WEBAUTHN',
+                      allowSingleFactor: body.type === SigninType.PASSWORDLESS ? true : undefined,
+                      allowTwoFactor: body.type === SigninType.TWO_FACTOR_AUTH ? true : undefined,
                     },
-                    method: 'WEBAUTHN',
-                    allowSingleFactor: body.type === SigninType.PASSWORDLESS ? true : undefined,
-                    allowTwoFactor: body.type === SigninType.TWO_FACTOR_AUTH ? true : undefined,
-                  },
-                })
-              )
-                .map((n) => {
-                  const data = n.data as unknown as AuthenticationJSONObject;
-                  if (data.type !== 'WEBAUTHN') {
-                    return;
-                  }
+                  })
+                )
+                  .map((n) => {
+                    const data = n.data as unknown as AuthenticationJSONObject;
+                    if (data.type !== 'WEBAUTHN') {
+                      return;
+                    }
 
-                  return {
-                    id: data.data.key.id,
-                    type: 'public-key',
-                  };
-                })
-                .filter((n) => n !== undefined),
-            }
+                    return {
+                      id: data.data.key.id,
+                      type: 'public-key',
+                    };
+                  })
+                  .filter((n) => n !== undefined),
+              }
             : undefined,
       };
 

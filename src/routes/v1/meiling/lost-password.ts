@@ -221,30 +221,30 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
       webauthn:
         currentMethod === Meiling.V1.Interfaces.ExtendedAuthMethods.WEBAUTHN
           ? {
-            allowCredentials: (
-              await getPrismaClient().authentication.findMany({
-                where: {
-                  user: {
-                    id: user.id,
+              allowCredentials: (
+                await getPrismaClient().authentication.findMany({
+                  where: {
+                    user: {
+                      id: user.id,
+                    },
+                    method: 'WEBAUTHN',
+                    allowPasswordReset: true,
                   },
-                  method: 'WEBAUTHN',
-                  allowPasswordReset: true,
-                },
-              })
-            )
-              .map((n) => {
-                const data = n.data as unknown as AuthenticationJSONObject;
-                if (data.type !== 'WEBAUTHN') {
-                  return;
-                }
+                })
+              )
+                .map((n) => {
+                  const data = n.data as unknown as AuthenticationJSONObject;
+                  if (data.type !== 'WEBAUTHN') {
+                    return;
+                  }
 
-                return {
-                  id: data.data.key.id,
-                  type: 'public-key',
-                };
-              })
-              .filter((n) => n !== undefined),
-          }
+                  return {
+                    id: data.data.key.id,
+                    type: 'public-key',
+                  };
+                })
+                .filter((n) => n !== undefined),
+            }
           : undefined,
     };
 
@@ -291,7 +291,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
   if (
     !passwordReset.challengeCreatedAt ||
     new Date().getTime() - new Date(passwordReset.challengeCreatedAt).getTime() >
-    1000 * config.token.invalidate.meiling.CHALLENGE_TOKEN
+      1000 * config.token.invalidate.meiling.CHALLENGE_TOKEN
   ) {
     throw new Meiling.V1.Error.MeilingError(
       Meiling.V1.Error.ErrorType.AUTHENTICATION_TIMEOUT,

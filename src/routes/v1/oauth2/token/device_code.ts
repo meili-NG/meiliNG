@@ -99,7 +99,11 @@ export async function oAuth2DeviceCodeHandler(req: FastifyRequest, rep: FastifyR
   // device code is single-use: consume it atomically so concurrent replays fail
   const { count } = await getPrismaClient().oAuthToken.deleteMany({ where: { token, type } });
   if (count === 0) {
-    Meiling.OAuth2.Error.sendOAuth2Error(rep, Meiling.OAuth2.Error.ErrorType.INVALID_GRANT, 'device_code has already been used');
+    Meiling.OAuth2.Error.sendOAuth2Error(
+      rep,
+      Meiling.OAuth2.Error.ErrorType.INVALID_GRANT,
+      'device_code has already been used',
+    );
     return;
   }
 
