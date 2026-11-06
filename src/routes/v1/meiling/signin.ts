@@ -9,6 +9,7 @@ import { ExtendedAuthMethods, SigninType } from '../../../common/meiling/v1/inte
 import { getPrismaClient } from '../../../resources/prisma';
 import { AuthenticationJSONObject } from '../../../common/meiling/identity/user';
 import { NodeEnvironment } from '../../../interface';
+import { OTPVerificationRateLimitedError } from '../../../common/meiling/authentication/validate';
 
 const MAX_VERIFICATION_ATTEMPTS = 5;
 
@@ -520,7 +521,18 @@ please request this endpoint without challengeResponse field to request challeng
       authMethodCheckUsers.push(webauthn.userId);
     }
 
-    const authMethodCheckResults = await Promise.all(authMethodCheckPromises);
+    let isOTPVerificationRateLimited = false;
+    const authMethodCheckResults = await Promise.all(
+      authMethodCheckPromises.map((promise) =>
+        promise.catch((e) => {
+          if (!(e instanceof OTPVerificationRateLimitedError)) throw e;
+
+          // Another candidate credential may still match, so decide after all checks.
+          isOTPVerificationRateLimited = true;
+          return false;
+        }),
+      ),
+    );
     const authMethodCheckIndex = authMethodCheckResults
       .map((n, i) => (n === true ? i : undefined))
       .filter((n) => n !== undefined) as number[];
@@ -553,6 +565,13 @@ please request this endpoint without challengeResponse field to request challeng
     } else {
       extendedAuthSession.failedAttempts = failedAttempts + 1;
       await Meiling.V1.Session.setExtendedAuthenticationSession(req, extendedAuthSession);
+
+      if (isOTPVerificationRateLimited) {
+        throw new Meiling.V1.Error.MeilingError(
+          Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+          'OTP verification attempt limit exceeded, please try again later.',
+        );
+      }
 
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.SIGNIN_FAILED, 'invalid 2fa');
       return;

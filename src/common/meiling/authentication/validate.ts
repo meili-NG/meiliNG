@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { PhoneNumber } from 'libphonenumber-js';
 import * as OpenPGP from 'openpgp';
 import * as SpeakEasy from 'speakeasy';
@@ -94,6 +95,31 @@ export async function validateWebAuthn(
   return false;
 }
 
+const OTP_MAX_VERIFICATION_ATTEMPTS = 5;
+const OTP_VERIFICATION_WINDOW_MS = 5 * 60 * 1000;
+const OTP_COMPARE_AND_SWAP_RETRIES = 5;
+
+/**
+ * Thrown when the OTP credential has used up its failed verification attempts.
+ * Callers should report it as a rate limit instead of a wrong code.
+ */
+export class OTPVerificationRateLimitedError extends Error {
+  constructor() {
+    super('OTP verification attempt limit exceeded');
+    this.name = 'OTPVerificationRateLimitedError';
+  }
+}
+
+type OTPVerificationAttempts = NonNullable<AuthenticationOTPObject['verificationAttempts']>;
+
+type OTPAttemptReservation = { status: 'reserved'; expiresAt: number } | { status: 'limited' } | { status: 'failed' };
+
+interface OTPAuthenticationSnapshot {
+  stored: NonNullable<Prisma.JsonValue>;
+  data: AuthenticationOTPObject;
+  attempts?: OTPVerificationAttempts;
+}
+
 export async function validateOTP(
   challengeResponse: string,
   secret: string,
@@ -101,65 +127,119 @@ export async function validateOTP(
 ): Promise<boolean> {
   // Reserve a verification attempt on the credential, independently of sessions
   // and challenge issuance. A missing credential id must never bypass the limit.
-  if (!authenticationId || !(await consumeOTPVerificationAttempt(authenticationId, secret))) return false;
+  if (!authenticationId) return false;
+
+  const reservation = await reserveOTPVerificationAttempt(authenticationId, secret);
+  if (reservation.status === 'limited') throw new OTPVerificationRateLimitedError();
+  if (reservation.status !== 'reserved') return false;
 
   if (challengeResponse.includes(' ')) {
     challengeResponse = challengeResponse.replace(/ /g, '');
   }
 
-  return SpeakEasy.totp.verify({
+  const isValid = SpeakEasy.totp.verify({
     secret,
     encoding: 'base32',
     token: challengeResponse.trim(),
   });
-}
 
-async function consumeOTPVerificationAttempt(authenticationId: string, secret: string): Promise<boolean> {
-  const maxAttempts = 5;
-  const windowMs = 5 * 60 * 1000;
-  const client = getPrismaClient();
-
-  // Compare-and-swap the JSON to avoid losing increments across concurrent
-  // requests or server processes. Bounded contention fails closed.
-  for (let retry = 0; retry < maxAttempts; retry++) {
-    const authentication = await client.authentication.findUnique({ where: { id: authenticationId } });
-    if (!authentication || authentication.method !== 'OTP' || authentication.data === null) return false;
-
-    const data: AuthenticationOTPObject =
-      typeof authentication.data === 'string' ? JSON.parse(authentication.data) : authentication.data;
-    if (data?.type !== 'OTP' || data.data?.secret !== secret) return false;
-
-    const now = Date.now();
-    const previous = data.verificationAttempts;
-    if (
-      previous !== undefined &&
-      (!Number.isSafeInteger(previous.count) ||
-        previous.count < 0 ||
-        !Number.isSafeInteger(previous.expiresAt) ||
-        previous.expiresAt < 0)
-    ) {
-      return false;
+  // Only failed codes count toward the limit. The attempt is reserved before
+  // verification so concurrent guesses cannot exceed the limit, and is given
+  // back here once the code turns out to be correct.
+  if (isValid) {
+    try {
+      await releaseOTPVerificationAttempt(authenticationId, secret, reservation.expiresAt);
+    } catch {
+      // Keeping the attempt counted is the safe fallback; the sign-in stays valid.
     }
-    const attempts = previous && previous.expiresAt > now ? previous : { count: 0, expiresAt: now + windowMs };
-    if (attempts.count >= maxAttempts) return false;
-
-    const updated = await client.authentication.updateMany({
-      where: {
-        id: authenticationId,
-        method: 'OTP',
-        data: { equals: authentication.data },
-      },
-      data: {
-        data: {
-          ...data,
-          verificationAttempts: { count: attempts.count + 1, expiresAt: attempts.expiresAt },
-        },
-      },
-    });
-    if (updated.count === 1) return true;
   }
 
-  return false;
+  return isValid;
+}
+
+async function readOTPAuthentication(
+  authenticationId: string,
+  secret: string,
+): Promise<OTPAuthenticationSnapshot | null> {
+  const authentication = await getPrismaClient().authentication.findUnique({ where: { id: authenticationId } });
+  if (!authentication || authentication.method !== 'OTP' || authentication.data === null) return null;
+
+  const data: AuthenticationOTPObject =
+    typeof authentication.data === 'string' ? JSON.parse(authentication.data) : authentication.data;
+  if (data?.type !== 'OTP' || data.data?.secret !== secret) return null;
+
+  const attempts = data.verificationAttempts;
+  if (
+    attempts !== undefined &&
+    (!Number.isSafeInteger(attempts.count) ||
+      attempts.count < 0 ||
+      !Number.isSafeInteger(attempts.expiresAt) ||
+      attempts.expiresAt < 0)
+  ) {
+    return null;
+  }
+
+  return { stored: authentication.data, data, attempts };
+}
+
+async function writeOTPVerificationAttempts(
+  authenticationId: string,
+  snapshot: OTPAuthenticationSnapshot,
+  attempts: OTPVerificationAttempts,
+): Promise<boolean> {
+  // Compare-and-swap the JSON to avoid losing updates across concurrent
+  // requests or server processes.
+  const updated = await getPrismaClient().authentication.updateMany({
+    where: {
+      id: authenticationId,
+      method: 'OTP',
+      data: { equals: snapshot.stored },
+    },
+    data: {
+      data: {
+        ...snapshot.data,
+        verificationAttempts: attempts,
+      },
+    },
+  });
+
+  return updated.count === 1;
+}
+
+async function reserveOTPVerificationAttempt(authenticationId: string, secret: string): Promise<OTPAttemptReservation> {
+  // Bounded contention fails closed.
+  for (let retry = 0; retry < OTP_COMPARE_AND_SWAP_RETRIES; retry++) {
+    const snapshot = await readOTPAuthentication(authenticationId, secret);
+    if (!snapshot) return { status: 'failed' };
+
+    const now = Date.now();
+    const previous = snapshot.attempts;
+    const attempts =
+      previous && previous.expiresAt > now ? previous : { count: 0, expiresAt: now + OTP_VERIFICATION_WINDOW_MS };
+    if (attempts.count >= OTP_MAX_VERIFICATION_ATTEMPTS) return { status: 'limited' };
+
+    const reserved = { count: attempts.count + 1, expiresAt: attempts.expiresAt };
+    if (await writeOTPVerificationAttempts(authenticationId, snapshot, reserved)) {
+      return { status: 'reserved', expiresAt: reserved.expiresAt };
+    }
+  }
+
+  return { status: 'failed' };
+}
+
+async function releaseOTPVerificationAttempt(authenticationId: string, secret: string, expiresAt: number) {
+  for (let retry = 0; retry < OTP_COMPARE_AND_SWAP_RETRIES; retry++) {
+    const snapshot = await readOTPAuthentication(authenticationId, secret);
+    if (!snapshot) return;
+
+    // A different window means the reserved attempt has already expired.
+    const attempts = snapshot.attempts;
+    if (!attempts || attempts.expiresAt !== expiresAt || attempts.count < 1) return;
+
+    if (await writeOTPVerificationAttempts(authenticationId, snapshot, { count: attempts.count - 1, expiresAt })) {
+      return;
+    }
+  }
 }
 
 // TODO: get Language

@@ -7,7 +7,12 @@ import {
   AuthenticationPGPSSHKeyObject,
   AuthenticationWebAuthnObject,
 } from '../identity/user';
-import { validateOTP, validatePGPSign, validateWebAuthn } from '../authentication/validate';
+import {
+  OTPVerificationRateLimitedError,
+  validateOTP,
+  validatePGPSign,
+  validateWebAuthn,
+} from '../authentication/validate';
 import * as Utils from '../../utils';
 import config from '../../../resources/config';
 import { NodeEnvironment } from '../../../interface';
@@ -144,6 +149,9 @@ export async function verifyChallenge(
         return await validateOTP(challengeResponse, (data as AuthenticationOTPObject).data.secret, authenticationId);
     }
   } catch (e) {
+    // Let callers report an exhausted OTP limit instead of a wrong code.
+    if (e instanceof OTPVerificationRateLimitedError) throw e;
+
     /*
     if (config.node.environment === NodeEnvironment.Development)
       console.error('challenge validation failed with error:', e);

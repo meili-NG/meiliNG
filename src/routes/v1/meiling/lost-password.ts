@@ -7,6 +7,7 @@ import config from '../../../resources/config';
 import { getPrismaClient } from '../../../resources/prisma';
 import { Event } from '../../../common';
 import { AuthenticationJSONObject } from '../../../common/meiling/identity/user';
+import { OTPVerificationRateLimitedError } from '../../../common/meiling/authentication/validate';
 
 const MAX_VERIFICATION_ATTEMPTS = 5;
 
@@ -348,16 +349,29 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     }
   }
 
+  let isOTPVerificationRateLimited = false;
   const isValid = await Meiling.V1.Challenge.verifyChallenge(
     passwordReset.method,
     passwordReset.challenge,
     body.data.challengeResponse,
     data as unknown as AuthenticationJSONObject | undefined,
     authenticationId,
-  );
+  ).catch((e) => {
+    if (!(e instanceof OTPVerificationRateLimitedError)) throw e;
+
+    isOTPVerificationRateLimited = true;
+    return false;
+  });
   if (!isValid) {
     passwordReset.failedAttempts = failedAttempts + 1;
     await Meiling.V1.Session.setPasswordResetSession(req, passwordReset);
+
+    if (isOTPVerificationRateLimited) {
+      throw new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+        'OTP verification attempt limit exceeded, please try again later.',
+      );
+    }
 
     throw new Meiling.V1.Error.MeilingError(
       Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_INVALID,
