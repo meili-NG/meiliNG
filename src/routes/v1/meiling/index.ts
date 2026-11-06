@@ -1,5 +1,6 @@
 import { FastifyError, FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
+import { addAuthenticationRateLimitHook } from '../../../common/fastify/authenticationRateLimit';
 import { NodeEnvironment } from '../../../interface';
 import config from '../../../resources/config';
 import { appsPlugin } from './apps';
@@ -22,7 +23,7 @@ export interface FastifyRequestWithUser extends FastifyRequestWithSession {
   user: UserModel;
 }
 
-function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
+async function meilingV1Plugin(app: FastifyInstance): Promise<void> {
   app.addSchema({
     $id: 'MeilingV1Error',
     description: 'Common error response of meiliNG',
@@ -62,10 +63,12 @@ function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done:
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND);
   });
 
-  app.register(fastifyCors, {
+  await app.register(fastifyCors, {
     origin: config.node.environment === NodeEnvironment.Development ? '*' : config.frontend.url,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
+
+  addAuthenticationRateLimitHook(app);
 
   app.get('/', (req, rep) => {
     rep.send({
@@ -77,7 +80,6 @@ function meilingV1Plugin(app: FastifyInstance, opts: FastifyPluginOptions, done:
 
   app.register(sessionPlugin, { prefix: '/session' });
   app.register(sessionRequiredPlugin);
-  done();
 }
 
 function sessionRequiredPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
@@ -103,11 +105,11 @@ function sessionRequiredPlugin(app: FastifyInstance, opts: FastifyPluginOptions,
     },
   });
 
-  app.post('/signin', signinHandler);
+  app.post('/signin', { config: { authenticationRateLimit: true } }, signinHandler);
 
   app.register(signupPlugin, { prefix: '/signup' });
 
-  app.post('/lost-password', lostPasswordHandler);
+  app.post('/lost-password', { config: { authenticationRateLimit: true } }, lostPasswordHandler);
 
   app.register(signoutPlugin, { prefix: '/signout' });
 

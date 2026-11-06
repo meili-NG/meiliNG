@@ -6,6 +6,7 @@ export function sessionPlugin(app: FastifyInstance, opts: FastifyPluginOptions, 
   app.get(
     '/',
     {
+      config: { authenticationRateLimit: true },
       schema: {
         description: 'Issue a new Session token or Verify Session token for meiliNG V1 Endpoints',
         tags: ['meiling'],

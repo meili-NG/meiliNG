@@ -1,6 +1,7 @@
 import crypto from 'crypto';
-import { FastifyError, FastifyInstance, FastifyPluginOptions } from 'fastify';
+import { FastifyError, FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
+import { addAuthenticationRateLimitHook } from '../../../common/fastify/authenticationRateLimit';
 import { Meiling, Utils } from '../../../common';
 import { sentryErrorHandler } from '../../../common/sentry/tracer';
 import { NodeEnvironment } from '../../../interface';
@@ -24,7 +25,7 @@ const isAdminToken = (tokens: string[], candidate: string): boolean => {
   });
 };
 
-const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void => {
+const adminV1Plugin = async (app: FastifyInstance): Promise<void> => {
   app.setErrorHandler<FastifyError>(async (_err, req, rep) => {
     const err = _err as Error;
 
@@ -50,7 +51,7 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.NOT_FOUND);
   });
 
-  app.register(fastifyCors, {
+  await app.register(fastifyCors, {
     origin:
       config.node.environment === NodeEnvironment.Development
         ? '*'
@@ -59,6 +60,9 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
         : config.frontend.url,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
+
+  // Unknown paths also run the admin credential check.
+  addAuthenticationRateLimitHook(app, true);
 
   app.addHook('onRequest', (req, rep, next) => {
     if (!config.admin || !config.admin.tokens.length) {
@@ -126,8 +130,6 @@ const adminV1Plugin = (app: FastifyInstance, opts: FastifyPluginOptions, done: (
   app.register(sessionsAdminHandler, { prefix: '/sessions' });
   app.register(internalAdminHandler, { prefix: '/internal' });
   app.register(permissionsAdminHandler, { prefix: '/permissions' });
-
-  done();
 };
 
 export default adminV1Plugin;

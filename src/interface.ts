@@ -53,6 +53,10 @@ export interface ConfigInterface {
   };
   meiling: {
     hostname: string;
+    authenticationRateLimit?: {
+      maxRequests: number;
+      timeframe: number;
+    };
     error: {
       urlFormat: string;
     };

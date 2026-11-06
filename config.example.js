@@ -42,6 +42,11 @@ module.exports = {
   meiling: {
     /** The hostname of the meiling, give the public URL origin of this API. */
     hostname: 'https://meiling.stella-api.dev',
+    /** Shared IP limit for authentication requests. Timeframe is in seconds. */
+    authenticationRateLimit: {
+      maxRequests: 60,
+      timeframe: 60,
+    },
     /** The following URL will be filled with errorcode on error, and sent to user */
     error: {
       urlFormat: 'https://opensource.stella-it.com/developers/docs/meiling/error/{{errorCode}}.html',

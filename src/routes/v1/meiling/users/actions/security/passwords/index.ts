@@ -15,9 +15,9 @@ export interface PasswordChangeBody {
 
 function userPasswordsPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
   app.get('/', userPasswordGetHandler);
-  app.post('/', userPasswordCreateHandler);
-  app.put('/', userPasswordUpdateHandler);
-  app.delete('/', userPasswordDeleteHandler);
+  app.post('/', { config: { authenticationRateLimit: true } }, userPasswordCreateHandler);
+  app.put('/', { config: { authenticationRateLimit: true } }, userPasswordUpdateHandler);
+  app.delete('/', { config: { authenticationRateLimit: true } }, userPasswordDeleteHandler);
 
   done();
 }

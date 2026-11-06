@@ -48,6 +48,10 @@ module.exports = {
   },
   meiling: {
     hostname: process.env.MEILING_HOSTNAME || 'https://demo.meili.ng',
+    authenticationRateLimit: {
+      maxRequests: Number(process.env.AUTHENTICATION_RATE_LIMIT_MAX_REQUESTS ?? 60),
+      timeframe: Number(process.env.AUTHENTICATION_RATE_LIMIT_TIMEFRAME ?? 60),
+    },
     error: {
       urlFormat:
         process.env.MEILING_ERROR_URL_FORMAT ||

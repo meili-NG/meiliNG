@@ -17,6 +17,7 @@ export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, d
   app.post(
     '/',
     {
+      config: { authenticationRateLimit: true },
       schema: {
         description: 'Endpoint to sign-up an account',
         tags: ['meiling'],

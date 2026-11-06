@@ -6,6 +6,14 @@ import userOTPPlugin from './otp';
 import userWebAuthnPlugin from './webauthn';
 
 function userSecurityPlugin(app: FastifyInstance, opts: FastifyPluginOptions, done: () => void): void {
+  app.addHook('onRoute', (route) => {
+    // GET/HEAD only read registered authentication methods and settings.
+    // Reserve the authentication quota for enrollment, verification and changes.
+    if (route.method !== 'GET' && route.method !== 'HEAD') {
+      route.config = { ...route.config, authenticationRateLimit: true };
+    }
+  });
+
   app.register(userPasswordsPlugin, { prefix: '/passwords' });
   app.register(user2FAPlugin, { prefix: '/2fa' });
   app.register(userOTPPlugin, { prefix: '/otp' });
