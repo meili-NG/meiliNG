@@ -141,7 +141,7 @@ export async function verifyChallenge(
       case ExtendedAuthMethods.EMAIL:
         return Utils.timingSafeEqualString((challenge as string).trim(), (challengeResponse as string).trim());
       case ExtendedAuthMethods.OTP:
-        return validateOTP(challengeResponse, (data as AuthenticationOTPObject).data.secret);
+        return await validateOTP(challengeResponse, (data as AuthenticationOTPObject).data.secret, authenticationId);
     }
   } catch (e) {
     /*

@@ -454,7 +454,7 @@ please request this endpoint without challengeResponse field to request challeng
             if (authMethod.userId !== null) {
               // add promise to array
               authMethodCheckPromises.push(
-                Meiling.V1.Challenge.verifyChallenge(signinMethod, challenge, challengeResponse, data),
+                Meiling.V1.Challenge.verifyChallenge(signinMethod, challenge, challengeResponse, data, authMethod.id),
               );
               authMethodCheckUsers.push(authMethod.userId);
             }

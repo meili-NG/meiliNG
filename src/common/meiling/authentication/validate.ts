@@ -4,7 +4,7 @@ import * as SpeakEasy from 'speakeasy';
 import config from '../../../resources/config';
 import { getPrismaClient } from '../../../resources/prisma';
 import * as Notification from '../../notification';
-import { AuthenticationWebAuthnObject } from '../identity/user';
+import { AuthenticationOTPObject, AuthenticationWebAuthnObject } from '../identity/user';
 import SimpleWebAuthn, { verifyAuthenticationResponse } from '@simplewebauthn/server';
 
 export async function validatePGPSign(
@@ -94,7 +94,15 @@ export async function validateWebAuthn(
   return false;
 }
 
-export function validateOTP(challengeResponse: string, secret: string) {
+export async function validateOTP(
+  challengeResponse: string,
+  secret: string,
+  authenticationId?: string,
+): Promise<boolean> {
+  // Reserve a verification attempt on the credential, independently of sessions
+  // and challenge issuance. A missing credential id must never bypass the limit.
+  if (!authenticationId || !(await consumeOTPVerificationAttempt(authenticationId, secret))) return false;
+
   if (challengeResponse.includes(' ')) {
     challengeResponse = challengeResponse.replace(/ /g, '');
   }
@@ -104,6 +112,54 @@ export function validateOTP(challengeResponse: string, secret: string) {
     encoding: 'base32',
     token: challengeResponse.trim(),
   });
+}
+
+async function consumeOTPVerificationAttempt(authenticationId: string, secret: string): Promise<boolean> {
+  const maxAttempts = 5;
+  const windowMs = 5 * 60 * 1000;
+  const client = getPrismaClient();
+
+  // Compare-and-swap the JSON to avoid losing increments across concurrent
+  // requests or server processes. Bounded contention fails closed.
+  for (let retry = 0; retry < maxAttempts; retry++) {
+    const authentication = await client.authentication.findUnique({ where: { id: authenticationId } });
+    if (!authentication || authentication.method !== 'OTP' || authentication.data === null) return false;
+
+    const data: AuthenticationOTPObject =
+      typeof authentication.data === 'string' ? JSON.parse(authentication.data) : authentication.data;
+    if (data?.type !== 'OTP' || data.data?.secret !== secret) return false;
+
+    const now = Date.now();
+    const previous = data.verificationAttempts;
+    if (
+      previous !== undefined &&
+      (!Number.isSafeInteger(previous.count) ||
+        previous.count < 0 ||
+        !Number.isSafeInteger(previous.expiresAt) ||
+        previous.expiresAt < 0)
+    ) {
+      return false;
+    }
+    const attempts = previous && previous.expiresAt > now ? previous : { count: 0, expiresAt: now + windowMs };
+    if (attempts.count >= maxAttempts) return false;
+
+    const updated = await client.authentication.updateMany({
+      where: {
+        id: authenticationId,
+        method: 'OTP',
+        data: { equals: authentication.data },
+      },
+      data: {
+        data: {
+          ...data,
+          verificationAttempts: { count: attempts.count + 1, expiresAt: attempts.expiresAt },
+        },
+      },
+    });
+    if (updated.count === 1) return true;
+  }
+
+  return false;
 }
 
 // TODO: get Language

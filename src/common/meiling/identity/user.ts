@@ -63,6 +63,10 @@ export interface AuthenticationOTPObject {
   data: {
     secret: string;
   };
+  verificationAttempts?: {
+    count: number;
+    expiresAt: number;
+  };
 }
 
 interface AuthenticationEmailSMSObject {
