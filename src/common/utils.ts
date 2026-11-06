@@ -150,12 +150,9 @@ export function timingSafeEqualString(a?: string | null, b?: string | null): boo
 }
 
 export function checkBase64(string: string) {
-  let convertedString = string;
-  if (string.includes('-') || string.includes('_')) {
-    convertedString = convertedString.replace(/\-/g, '+').replace(/\_/g, '/');
-    convertedString = convertedString.padEnd(Math.ceil(convertedString.length / 4) * 4, '=');
-    console.log(convertedString);
-  }
+  let convertedString = string.replace(/-/g, '+').replace(/_/g, '/');
+  // Unpadded base64url can contain only alphanumeric characters.
+  convertedString = convertedString.padEnd(Math.ceil(convertedString.length / 4) * 4, '=');
 
   const regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$/;
   return regex.test(convertedString);

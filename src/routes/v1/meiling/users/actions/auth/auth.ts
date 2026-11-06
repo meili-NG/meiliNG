@@ -169,8 +169,6 @@ export async function meilingV1OAuthClientAuthHandler(req: FastifyRequest, rep: 
         );
         return;
       }
-
-      if (query.code_challenge) query.code_challenge.replace(/-/g, '+').replace(/_/g, '/');
     }
     code_challenge = true;
   }
