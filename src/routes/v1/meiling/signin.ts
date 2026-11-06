@@ -13,6 +13,11 @@ import { OTPVerificationRateLimitedError } from '../../../common/meiling/authent
 
 const MAX_VERIFICATION_ATTEMPTS = 5;
 
+// SMS and email codes are delivered to one user's contact, so their challenges must be bound to that user.
+function isUserBoundChallengeMethod(method?: ExtendedAuthMethods | null): boolean {
+  return method === ExtendedAuthMethods.SMS || method === ExtendedAuthMethods.EMAIL;
+}
+
 export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Promise<void> {
   const session = (req as FastifyRequestWithSession).session;
   let body;
@@ -170,6 +175,13 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
 
       const username = body?.context?.username;
 
+      if (isUserBoundChallengeMethod(signinMethod) && (typeof username !== 'string' || username.length === 0)) {
+        throw new Meiling.V1.Error.MeilingError(
+          Meiling.V1.Error.ErrorType.INVALID_REQUEST,
+          'username is required for SMS and email passwordless sign-in.',
+        );
+      }
+
       if (username !== undefined) {
         const users = Utils.getUnique(
           await Meiling.Identity.User.findByCommonUsername(username),
@@ -194,8 +206,18 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
           authMethods.push(...thisMethods);
         }
       } else {
+        const allAuthMethods = await Meiling.V1.User.getAvailableExtendedAuthenticationMethods(
+          undefined,
+          body.type,
+          signinMethod,
+        );
+
+        // without a username there is no recipient for SMS or email codes, so do not offer them.
         authMethods.push(
-          ...(await Meiling.V1.User.getAvailableExtendedAuthenticationMethods(undefined, body.type, signinMethod)),
+          ...allAuthMethods.filter(
+            (authMethod) =>
+              !isUserBoundChallengeMethod(Meiling.V1.Database.convertAuthenticationMethod(authMethod.method)),
+          ),
         );
       }
 
@@ -381,14 +403,21 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
 
     // validate current method is same with session's extendedAuthentication
     const extendedAuthSession = session.extendedAuthentication;
-    if (
-      extendedAuthSession.type === Meiling.V1.Interfaces.SigninType.PASSWORDLESS &&
-      extendedAuthSession.userId !== targetUsers[0]?.id
-    ) {
-      throw new Meiling.V1.Error.MeilingError(
-        Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_NOT_GENERATED,
-        'authentication request does not match the user it was generated for.',
-      );
+    if (extendedAuthSession.type === Meiling.V1.Interfaces.SigninType.PASSWORDLESS) {
+      const boundUserId = extendedAuthSession.userId;
+      const requestedUserId = targetUsers[0]?.id;
+
+      // an SMS or email challenge with no bound user was never delivered to anyone, so it can never be valid.
+      const isUnboundUserChallenge =
+        (isUserBoundChallengeMethod(signinMethod) || isUserBoundChallengeMethod(extendedAuthSession.method)) &&
+        boundUserId === undefined;
+
+      if (isUnboundUserChallenge || boundUserId !== requestedUserId) {
+        throw new Meiling.V1.Error.MeilingError(
+          Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_NOT_GENERATED,
+          'authentication request does not match the user it was generated for.',
+        );
+      }
     }
 
     if (extendedAuthSession.method !== body.data?.method) {
