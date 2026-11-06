@@ -221,10 +221,22 @@ export async function signinHandler(req: FastifyRequest, rep: FastifyReply): Pro
         );
       }
 
-      await Meiling.V1.Session.setExtendedAuthenticationSession(req, {
-        type: Meiling.V1.Interfaces.SigninType.PASSWORDLESS,
-        userId: targetUsers[0]?.id,
-      });
+      const prevExtendedAuth = session.extendedAuthentication;
+      const targetUserId = targetUsers[0]?.id;
+      const isSamePasswordlessFlow =
+        prevExtendedAuth?.type === Meiling.V1.Interfaces.SigninType.PASSWORDLESS &&
+        prevExtendedAuth.userId === targetUserId;
+
+      // keep the outstanding challenge of the same passwordless flow, so that listing methods or
+      // re-requesting does not wipe it. when the flow changes, the old challenge is dropped but
+      // challengeCreatedAt is carried over so that the challenge rate limit cannot be reset.
+      if (!isSamePasswordlessFlow) {
+        await Meiling.V1.Session.setExtendedAuthenticationSession(req, {
+          type: Meiling.V1.Interfaces.SigninType.PASSWORDLESS,
+          userId: targetUserId,
+          challengeCreatedAt: prevExtendedAuth?.challengeCreatedAt,
+        });
+      }
     }
 
     const availableMethods = await Meiling.V1.Challenge.getMeilingAvailableAuthMethods(authMethods);
