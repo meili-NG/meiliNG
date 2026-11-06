@@ -35,13 +35,13 @@ async function oAuth2V1Plugin(app: FastifyInstance): Promise<void> {
   app.route({
     method: ['GET', 'POST'],
     url: '/tokeninfo',
-    config: { authenticationRateLimit: 'oauth2' },
+    config: { authenticationRateLimit: 'oauth2Lookup' },
     handler: oAuth2TokenInfoHandler,
   });
   app.route({
     method: ['GET', 'POST'],
     url: '/userinfo',
-    config: { authenticationRateLimit: 'oauth2' },
+    config: { authenticationRateLimit: 'oauth2Lookup' },
     handler: oAuth2UserInfoHandler,
   });
   app.route({

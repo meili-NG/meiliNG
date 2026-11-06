@@ -52,6 +52,10 @@ module.exports = {
       maxRequests: Number(process.env.AUTHENTICATION_RATE_LIMIT_MAX_REQUESTS ?? 60),
       timeframe: Number(process.env.AUTHENTICATION_RATE_LIMIT_TIMEFRAME ?? 60),
     },
+    oauth2LookupRateLimit: {
+      maxRequests: Number(process.env.OAUTH2_LOOKUP_RATE_LIMIT_MAX_REQUESTS ?? 600),
+      timeframe: Number(process.env.OAUTH2_LOOKUP_RATE_LIMIT_TIMEFRAME ?? 60),
+    },
     error: {
       urlFormat:
         process.env.MEILING_ERROR_URL_FORMAT ||
@@ -136,6 +140,10 @@ module.exports = {
     tokens: adminTokens,
     frontend: {
       url: process.env.ADMIN_FRONTEND_URLS ? process.env.ADMIN_FRONTEND_URLS.split(',') : ['http://frontend.meili.ng'],
+    },
+    rateLimit: {
+      maxRequests: Number(process.env.ADMIN_RATE_LIMIT_MAX_REQUESTS ?? 60),
+      timeframe: Number(process.env.ADMIN_RATE_LIMIT_TIMEFRAME ?? 60),
     },
   },
 };

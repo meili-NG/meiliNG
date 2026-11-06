@@ -57,6 +57,10 @@ export interface ConfigInterface {
       maxRequests: number;
       timeframe: number;
     };
+    oauth2LookupRateLimit?: {
+      maxRequests: number;
+      timeframe: number;
+    };
     error: {
       urlFormat: string;
     };
@@ -133,6 +137,10 @@ export interface ConfigInterface {
     tokens: string[];
     frontend: {
       url: string[];
+    };
+    rateLimit?: {
+      maxRequests: number;
+      timeframe: number;
     };
   };
 }

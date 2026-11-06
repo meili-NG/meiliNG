@@ -47,6 +47,11 @@ module.exports = {
       maxRequests: 60,
       timeframe: 60,
     },
+    /** Separate IP limit for OAuth2 lookups (/v1/oauth2/userinfo, /v1/oauth2/tokeninfo). Timeframe is in seconds. */
+    oauth2LookupRateLimit: {
+      maxRequests: 600,
+      timeframe: 60,
+    },
     /** The following URL will be filled with errorcode on error, and sent to user */
     error: {
       urlFormat: 'https://opensource.stella-it.com/developers/docs/meiling/error/{{errorCode}}.html',
@@ -151,6 +156,11 @@ module.exports = {
     tokens: [],
     frontend: {
       url: [],
+    },
+    /** Separate IP limit for /v1/admin endpoints. Timeframe is in seconds. */
+    rateLimit: {
+      maxRequests: 60,
+      timeframe: 60,
     },
   },
 };

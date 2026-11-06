@@ -65,8 +65,8 @@ const adminV1Plugin = async (app: FastifyInstance): Promise<void> => {
     exposedHeaders: authenticationRateLimitExposedHeaders,
   });
 
-  // Unknown paths also run the admin credential check.
-  addAuthenticationRateLimitHook(app, true);
+  // Unknown paths also run the admin credential check, so the admin bucket covers every request.
+  addAuthenticationRateLimitHook(app, 'admin');
 
   app.addHook('onRequest', (req, rep, next) => {
     if (!config.admin || !config.admin.tokens.length) {

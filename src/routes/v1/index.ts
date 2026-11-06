@@ -7,7 +7,11 @@ import oAuth2V1Plugin from './oauth2';
 import saml2V1Plugin from './saml2';
 
 async function v1Plugin(app: FastifyInstance): Promise<void> {
-  await registerAuthenticationRateLimit(app, config.meiling.authenticationRateLimit);
+  await registerAuthenticationRateLimit(app, {
+    authentication: config.meiling.authenticationRateLimit,
+    oauth2Lookup: config.meiling.oauth2LookupRateLimit,
+    admin: config.admin?.rateLimit,
+  });
 
   app.get('/', (req, rep) => {
     rep.send({
