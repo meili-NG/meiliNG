@@ -189,6 +189,8 @@ export async function getRedirectUris(clientId: string): Promise<string[]> {
 }
 
 export async function addRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
+  if (!OAuth2Utils.isSafeRedirectURI(redirectUri)) return false;
+
   const client = await getByClientId(clientId);
   if (!client) {
     throw new Error('Client not found');

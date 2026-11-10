@@ -32,7 +32,7 @@ export function appRedirectURIPlugin(app: FastifyInstance, opts: FastifyPluginOp
     const req = req_ as MeilingV1ClientRequest;
     let redirect_uri = (req.body as MeilingRedirectUriPostRequest).redirect_uri;
 
-    if (!Utils.isNotBlank(redirect_uri) || !Utils.isValidUri(redirect_uri)) {
+    if (!Utils.isNotBlank(redirect_uri) || !Meiling.OAuth2.Utils.isSafeRedirectURI(redirect_uri)) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST);
       return;
     }
@@ -194,7 +194,7 @@ export function appRedirectURIPlugin(app: FastifyInstance, opts: FastifyPluginOp
     const req = req_ as MeilingV1ClientRequest;
     let redirect_uri = (req.body as MeilingRedirectUriPostRequest).redirect_uri;
 
-    if (!Utils.isNotBlank(redirect_uri) || !Utils.isValidUri(redirect_uri)) {
+    if (!Utils.isNotBlank(redirect_uri) || !Meiling.OAuth2.Utils.isSafeRedirectURI(redirect_uri)) {
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST);
       return;
     }
