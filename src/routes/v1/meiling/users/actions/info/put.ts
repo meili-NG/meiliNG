@@ -48,6 +48,17 @@ export async function userUpdateInfo(req: FastifyRequest, rep: FastifyReply) {
           return;
         }
 
+        if (body.username !== undefined) {
+          if (typeof body.username !== 'string' || !Utils.isValidUsername(body.username)) {
+            throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'Invalid Username');
+          }
+
+          const existingUsers = await Meiling.Identity.User.findByUsername(body.username, { includeInactive: true });
+          if (existingUsers.some((existingUser) => existingUser.id !== user.id)) {
+            throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.EXISTING_USERNAME);
+          }
+        }
+
         await getPrismaClient().user.update({
           where: {
             id: user.id,
@@ -58,7 +69,7 @@ export async function userUpdateInfo(req: FastifyRequest, rep: FastifyReply) {
             givenName: Utils.isNotBlank(body.givenName) ? body.givenName : undefined,
             middleName: Utils.isNotBlank(body.middleName) ? body.middleName?.normalize('NFC') : undefined,
             name: Utils.isNotBlank(body.name) ? body.name : undefined,
-            username: Utils.isNotBlank(body.username) ? body.username : undefined,
+            username: body.username,
           },
         });
 
