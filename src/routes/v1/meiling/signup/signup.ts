@@ -104,6 +104,9 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
     }
   }
 
+  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
+  const hash = await bcrypt.hash(password, salt);
+
   await getPrismaClient().user.create({
     data: {
       username,
@@ -132,7 +135,7 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
             data: {
               type: 'PASSWORD',
               data: {
-                hash: bcrypt.hashSync(password, bcrypt.genSaltSync(Utils.getCryptoSafeInteger(6) + 10)),
+                hash,
               },
             },
             allowPasswordReset: false,
