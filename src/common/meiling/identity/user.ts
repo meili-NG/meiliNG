@@ -615,11 +615,27 @@ export async function getEmails(userId: string, isPrimary?: boolean) {
 }
 
 export async function addEmail(userId: string, email: string, isPrimary = false, verified = false) {
-  const prevPrimaries = (await getEmails(userId)).filter((n) => n.isPrimary);
+  email = email.toLowerCase();
+
+  if (isPrimary && config.meiling.preventDuplicates.email) {
+    const existingEmail = await getPrismaClient().email.findFirst({
+      where: {
+        email,
+        isPrimary: true,
+        userId: {
+          not: userId,
+        },
+      },
+    });
+
+    if (existingEmail) {
+      throw new MeilingError(ErrorType.EMAIL_NOT_ALLOWED);
+    }
+  }
 
   await getPrismaClient().email.create({
     data: {
-      email: email.toLowerCase(),
+      email,
       user: {
         connect: {
           id: userId,
@@ -639,12 +655,30 @@ export async function addEmail(userId: string, email: string, isPrimary = false,
 }
 
 export async function setPrimaryEmail(userId: string, email: string) {
+  email = email.toLowerCase();
   const emails = await getEmails(userId);
 
   const targetEmail = emails.find((n) => n.email === email);
-  const prevPrimaries = emails.filter((n) => n.isPrimary);
 
   if (!targetEmail) return false;
+
+  if (config.meiling.preventDuplicates.email) {
+    const existingEmail = await getPrismaClient().email.findFirst({
+      where: {
+        email,
+        isPrimary: true,
+        userId: {
+          not: userId,
+        },
+      },
+    });
+
+    if (existingEmail) {
+      throw new MeilingError(ErrorType.EMAIL_NOT_ALLOWED);
+    }
+  }
+
+  const prevPrimaries = emails.filter((n) => n.isPrimary && n.id !== targetEmail.id);
 
   await getPrismaClient().email.update({
     where: {
@@ -708,6 +742,18 @@ export async function getPhones(userId: string, isPrimary?: boolean) {
 }
 
 export async function addPhone(userId: string, phone: string, isPrimary = false) {
+  if (config.meiling.preventDuplicates.phone) {
+    const existingPhone = await getPrismaClient().phone.findFirst({
+      where: {
+        phone,
+      },
+    });
+
+    if (existingPhone) {
+      throw new MeilingError(ErrorType.PHONE_NOT_ALLOWED);
+    }
+  }
+
   const prevPrimaries = await getPhones(userId, true);
 
   await getPrismaClient().phone.create({

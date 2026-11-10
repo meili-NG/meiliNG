@@ -162,7 +162,7 @@ const userEmailAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions,
       return;
     }
 
-    if (body.isPrimary) {
+    if (body.isPrimary ?? email.isPrimary) {
       // check if there is existing primary emails.
       const primaryEmails = await getPrismaClient().email.findMany({
         where: {
@@ -183,15 +183,17 @@ const userEmailAdminHandler = (app: FastifyInstance, opts: FastifyPluginOptions,
         return;
       }
 
-      for (const primaryEmail of myPrimaryEmails) {
-        await getPrismaClient().email.update({
-          where: {
-            id: primaryEmail.id,
-          },
-          data: {
-            isPrimary: false,
-          },
-        });
+      if (body.isPrimary) {
+        for (const primaryEmail of myPrimaryEmails) {
+          await getPrismaClient().email.update({
+            where: {
+              id: primaryEmail.id,
+            },
+            data: {
+              isPrimary: false,
+            },
+          });
+        }
       }
     }
 
