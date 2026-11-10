@@ -37,22 +37,21 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
         return;
       }
 
-      if (session.authenticationStatus?.email?.challenge.challengeCreatedAt) {
-        const to = session.authenticationStatus.email.to;
-
-        if (to === email) {
-          const prevCreatedAt = new Date(session.authenticationStatus?.email?.challenge.challengeCreatedAt);
-
-          if (
-            Meiling.V1.Challenge.isChallengeRateLimited(Meiling.V1.Interfaces.ExtendedAuthMethods.EMAIL, prevCreatedAt)
-          ) {
-            throw new Meiling.V1.Error.MeilingError(
-              Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
-              'old token is still valid for email verification. rate_limited',
-            );
-            return;
-          }
-        }
+      // The cooldown applies to the session regardless of the recipient, so changing
+      // the address on every request cannot be used to send codes without a limit.
+      const prevEmailCreatedAt = session.authenticationStatus?.email?.challenge.challengeCreatedAt;
+      if (
+        prevEmailCreatedAt &&
+        Meiling.V1.Challenge.isChallengeRateLimited(
+          Meiling.V1.Interfaces.ExtendedAuthMethods.EMAIL,
+          new Date(prevEmailCreatedAt),
+        )
+      ) {
+        throw new Meiling.V1.Error.MeilingError(
+          Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+          'an email verification code was sent recently. rate_limited',
+        );
+        return;
       }
 
       await Notification.sendNotification(Notification.NotificationMethod.EMAIL, {
@@ -101,22 +100,21 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
         return;
       }
 
-      if (session.authenticationStatus?.phone?.challenge.challengeCreatedAt) {
-        const to = libphonenumberJs(session.authenticationStatus.phone.to);
-
-        if (to && to.formatInternational() === phone.formatInternational()) {
-          const prevCreatedAt = new Date(session.authenticationStatus?.phone?.challenge.challengeCreatedAt);
-
-          if (
-            Meiling.V1.Challenge.isChallengeRateLimited(Meiling.V1.Interfaces.ExtendedAuthMethods.SMS, prevCreatedAt)
-          ) {
-            throw new Meiling.V1.Error.MeilingError(
-              Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
-              'old token is still valid for phone authorization. rate_limited',
-            );
-            return;
-          }
-        }
+      // The cooldown applies to the session regardless of the recipient, so changing
+      // the number on every request cannot be used to send codes without a limit.
+      const prevPhoneCreatedAt = session.authenticationStatus?.phone?.challenge.challengeCreatedAt;
+      if (
+        prevPhoneCreatedAt &&
+        Meiling.V1.Challenge.isChallengeRateLimited(
+          Meiling.V1.Interfaces.ExtendedAuthMethods.SMS,
+          new Date(prevPhoneCreatedAt),
+        )
+      ) {
+        throw new Meiling.V1.Error.MeilingError(
+          Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+          'a phone verification code was sent recently. rate_limited',
+        );
+        return;
       }
 
       let method: Notification.NotificationMethod = Notification.NotificationMethod.SMS;
@@ -165,12 +163,14 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
       return;
     }
   } catch (e) {
+    // Keep request errors such as rate limits and invalid input as they are.
+    if (e instanceof Meiling.V1.Error.MeilingError) throw e;
+
+    console.error(e);
     throw new Meiling.V1.Error.MeilingError(
       Meiling.V1.Error.ErrorType.INTERNAL_SERVER_ERROR,
       'Failed to communicate with Server',
     );
-    console.error(e);
-    return;
   }
 
   rep.send({
