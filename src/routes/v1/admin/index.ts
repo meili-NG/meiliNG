@@ -78,12 +78,7 @@ const adminV1Plugin = async (app: FastifyInstance): Promise<void> => {
 
     const token = Meiling.Authentication.Token.getTokenFromRequest(req);
     if (!token) {
-      rep
-        .status(401)
-        .headers({
-          'WWW-Authenticate': 'Basic realm="scarlet_mansion"',
-        })
-        .send();
+      rep.status(401).send();
       throw new Error('User is not providing proper login credentials for admin');
     }
 
