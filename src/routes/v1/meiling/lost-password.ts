@@ -23,11 +23,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
     return;
   }
 
-  if (body.password) {
-    if (typeof body.password !== 'string') {
-      throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST);
-    }
-
+  if (body?.password !== undefined) {
     if (!session.passwordReset?.isVerified || !session.passwordReset.passwordResetUser) {
       throw new Meiling.V1.Error.MeilingError(
         Meiling.V1.Error.ErrorType.AUTHENTICATION_REQUEST_NOT_COMPLETED,
@@ -42,16 +38,7 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
       throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.WRONG_USERNAME, 'no user was found!');
     }
 
-    await getPrismaClient().authentication.deleteMany({
-      where: {
-        method: 'PASSWORD',
-        user: {
-          id: uuid,
-        },
-      },
-    });
-
-    await Meiling.Identity.User.addPassword(uuid, body.password);
+    await Meiling.Identity.User.resetPassword(uuid, body.password);
     await Meiling.V1.Session.setAuthenticationStatus(req, undefined);
     await Meiling.V1.Session.setPasswordResetSession(req, undefined);
 

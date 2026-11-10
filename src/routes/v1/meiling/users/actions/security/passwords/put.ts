@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { PasswordChangeBody } from '.';
 import { getUserFromActionRequest } from '../..';
@@ -30,15 +29,7 @@ export async function userPasswordUpdateHandler(req: FastifyRequest, rep: Fastif
     return;
   }
 
-  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
-  const hash = await bcrypt.hash(password, salt);
-
-  const data = {
-    type: 'PASSWORD',
-    data: {
-      hash: bcrypt.hashSync(newPassword, hash),
-    },
-  };
+  const data = await Meiling.Identity.User.createPasswordAuthentication(newPassword);
 
   for (const passwordRowToChange of passwordRowsToChange) {
     if (passwordRowToChange) {

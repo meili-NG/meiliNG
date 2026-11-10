@@ -104,8 +104,8 @@ export function isValidUsername(username: string): boolean {
   return usernameRegex.test(username);
 }
 
-export function isValidPassword(password: string): boolean {
-  return password.length >= minPasswordLength;
+export function isValidPassword(password: unknown): password is string {
+  return typeof password === 'string' && Array.from(password).length >= minPasswordLength;
 }
 
 export function isValidEmail(email: string): boolean {

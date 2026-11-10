@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import libmobilephoneJs from 'libphonenumber-js';
 import { FastifyRequestWithSession } from '..';
@@ -104,8 +103,7 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
     }
   }
 
-  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
-  const hash = await bcrypt.hash(password, salt);
+  const passwordAuthentication = await Meiling.Identity.User.createPasswordAuthentication(password);
 
   await getPrismaClient().user.create({
     data: {
@@ -132,12 +130,7 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
         create: [
           {
             method: 'PASSWORD',
-            data: {
-              type: 'PASSWORD',
-              data: {
-                hash,
-              },
-            },
+            data: passwordAuthentication,
             allowPasswordReset: false,
             allowSingleFactor: false,
             allowTwoFactor: false,

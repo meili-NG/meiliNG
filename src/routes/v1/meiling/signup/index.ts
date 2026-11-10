@@ -18,6 +18,11 @@ export function signupPlugin(app: FastifyInstance, opts: FastifyPluginOptions, d
     '/',
     {
       config: { authenticationRateLimit: true },
+      preValidation: (req, rep, next) => {
+        const body = req.body as { password?: unknown } | undefined;
+        Meiling.Identity.User.validateNewPassword(body?.password);
+        next();
+      },
       schema: {
         description: 'Endpoint to sign-up an account',
         tags: ['meiling'],

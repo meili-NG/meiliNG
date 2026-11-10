@@ -9,6 +9,7 @@ import { Utils } from '../..';
 import config from '../../../resources/config';
 import { getPrismaClient } from '../../../resources/prisma';
 import { SanitizedClientModel } from '../oauth2/client';
+import { ErrorType, MeilingError } from '../v1/error';
 
 export interface UserInfoObject extends UserModel {
   emails: Email[];
@@ -44,12 +45,12 @@ export interface AuthenticationWebAuthnObject {
   };
 }
 
-interface AuthenticationPasswordObject {
+type AuthenticationPasswordObject = {
   type: 'PASSWORD';
   data: {
     hash: string;
   };
-}
+};
 
 export interface AuthenticationPGPSSHKeyObject {
   type: 'PGP_KEY' | 'SSH_KEY';
@@ -287,16 +288,31 @@ export async function getPasswords(user: UserModel | string) {
   });
 }
 
-export async function addPassword(user: UserModel | string, password: string) {
+export function validateNewPassword(password: unknown): asserts password is string {
+  if (!Utils.isValidPassword(password)) {
+    throw new MeilingError(
+      ErrorType.INVALID_REQUEST,
+      `password must be a string with at least ${Utils.minPasswordLength} characters.`,
+    );
+  }
+}
+
+export async function createPasswordAuthentication(password: unknown): Promise<AuthenticationPasswordObject> {
+  validateNewPassword(password);
+
   const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
   const hash = await bcrypt.hash(password, salt);
 
-  const data: AuthenticationPasswordObject = {
+  return {
     type: 'PASSWORD',
     data: {
       hash,
     },
   };
+}
+
+export async function addPassword(user: UserModel | string, password: unknown) {
+  const data = await createPasswordAuthentication(password);
 
   const passwordData = await getPrismaClient().authentication.create({
     data: {
@@ -305,7 +321,7 @@ export async function addPassword(user: UserModel | string, password: string) {
           id: getUserId(user),
         },
       },
-      data: data as any,
+      data,
       method: 'PASSWORD',
       allowSingleFactor: false,
       allowTwoFactor: false,
@@ -314,6 +330,32 @@ export async function addPassword(user: UserModel | string, password: string) {
   });
 
   return passwordData ? true : false;
+}
+
+export async function resetPassword(user: UserModel | string, password: unknown) {
+  // Prepare the replacement before deleting any existing credentials.
+  const data = await createPasswordAuthentication(password);
+  const userId = getUserId(user);
+  const client = getPrismaClient();
+
+  await client.$transaction([
+    client.authentication.deleteMany({
+      where: {
+        userId,
+        method: 'PASSWORD',
+      },
+    }),
+    client.authentication.create({
+      data: {
+        userId,
+        data,
+        method: 'PASSWORD',
+        allowSingleFactor: false,
+        allowTwoFactor: false,
+        allowPasswordReset: false,
+      },
+    }),
+  ]);
 }
 
 type MeilingMetadataObjectConfig = MeilingMetadataObjectV1Config;
