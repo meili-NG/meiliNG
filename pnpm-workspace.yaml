@@ -6,5 +6,4 @@ allowBuilds:
   esbuild: true
   husky: true
   prisma: true
-  sodium-native: true
   ssh2: true
