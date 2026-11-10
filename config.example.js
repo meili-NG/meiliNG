@@ -60,6 +60,16 @@ module.exports = {
       timeframe: 60,
       allowList: [],
     },
+    /**
+     * Separate IP limit for sending SMS and email verification codes
+     * (/v1/meiling/authentication/issue, /v1/meiling/signin, /v1/meiling/lost-password).
+     * Timeframe is in seconds. Requests from IPs in allowList (exact IPv4/IPv6 addresses) bypass this limit.
+     */
+    notificationRateLimit: {
+      maxRequests: 5,
+      timeframe: 600,
+      allowList: [],
+    },
     /** The following URL will be filled with errorcode on error, and sent to user */
     error: {
       urlFormat: 'https://opensource.stella-it.com/developers/docs/meiling/error/{{errorCode}}.html',

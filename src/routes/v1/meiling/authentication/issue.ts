@@ -3,6 +3,7 @@ import libphonenumberJs from 'libphonenumber-js';
 import { FastifyRequestWithSession } from '..';
 import config from '../../../../resources/config';
 import { Meiling, Event, Notification, Utils } from '../../../../common';
+import { consumeNotificationRateLimit } from '../../../../common/fastify/authenticationRateLimit';
 
 type MeilingV1AuthenticationIssueQuery =
   | MeilingV1AuthenticationIssueEmailQuery
@@ -53,6 +54,8 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
         );
         return;
       }
+
+      await consumeNotificationRateLimit(req, rep);
 
       await Notification.sendNotification(Notification.NotificationMethod.EMAIL, {
         type: 'template',
@@ -116,6 +119,8 @@ export async function meilingV1SessionAuthnIssueHandler(req: FastifyRequest, rep
         );
         return;
       }
+
+      await consumeNotificationRateLimit(req, rep);
 
       let method: Notification.NotificationMethod = Notification.NotificationMethod.SMS;
 

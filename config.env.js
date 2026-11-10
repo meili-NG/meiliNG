@@ -65,6 +65,11 @@ module.exports = {
       timeframe: Number(process.env.OAUTH2_LOOKUP_RATE_LIMIT_TIMEFRAME ?? 60),
       allowList: parseRateLimitAllowList(process.env.OAUTH2_LOOKUP_RATE_LIMIT_ALLOW_LIST),
     },
+    notificationRateLimit: {
+      maxRequests: Number(process.env.NOTIFICATION_RATE_LIMIT_MAX_REQUESTS ?? 5),
+      timeframe: Number(process.env.NOTIFICATION_RATE_LIMIT_TIMEFRAME ?? 600),
+      allowList: parseRateLimitAllowList(process.env.NOTIFICATION_RATE_LIMIT_ALLOW_LIST),
+    },
     error: {
       urlFormat:
         process.env.MEILING_ERROR_URL_FORMAT ||

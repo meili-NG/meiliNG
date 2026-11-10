@@ -11,6 +11,7 @@ async function v1Plugin(app: FastifyInstance): Promise<void> {
     authentication: config.meiling.authenticationRateLimit,
     oauth2Lookup: config.meiling.oauth2LookupRateLimit,
     admin: config.admin?.rateLimit,
+    notification: config.meiling.notificationRateLimit,
   });
 
   app.get('/', (req, rep) => {

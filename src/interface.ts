@@ -63,6 +63,11 @@ export interface ConfigInterface {
       timeframe: number;
       allowList?: string[];
     };
+    notificationRateLimit?: {
+      maxRequests: number;
+      timeframe: number;
+      allowList?: string[];
+    };
     error: {
       urlFormat: string;
     };

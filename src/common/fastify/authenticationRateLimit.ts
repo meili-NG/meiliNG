@@ -1,7 +1,8 @@
 import rateLimit, { normalizeIP } from '@fastify/rate-limit';
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { isIP } from 'node:net';
 import { ConfigInterface } from '../../interface';
+import { ErrorType, MeilingError } from '../meiling/v1/error';
 
 // true: meiling authentication requests (MeilingV1 error format)
 // 'oauth2': OAuth2 authentication requests (OAuth2 error format)
@@ -15,6 +16,8 @@ type RateLimitSettings = ConfigInterface['meiling']['authenticationRateLimit'];
 
 type RateLimitHandler = ReturnType<FastifyInstance['rateLimit']>;
 
+type RateLimitCounter = ReturnType<FastifyInstance['createRateLimit']>;
+
 declare module 'fastify' {
   interface FastifyContextConfig {
     authenticationRateLimit?: AuthenticationRateLimitPolicy;
@@ -22,6 +25,7 @@ declare module 'fastify' {
 
   interface FastifyInstance {
     authenticationRateLimiters: Record<AuthenticationRateLimitBucket, RateLimitHandler>;
+    notificationRateLimiter: RateLimitCounter;
   }
 }
 
@@ -29,6 +33,7 @@ export interface AuthenticationRateLimitOptions {
   authentication?: RateLimitSettings;
   oauth2Lookup?: RateLimitSettings;
   admin?: RateLimitSettings;
+  notification?: RateLimitSettings;
 }
 
 // Headers set by @fastify/rate-limit. Browsers can read them cross-origin only
@@ -114,6 +119,10 @@ export async function registerAuthenticationRateLimit(
     maxRequests: 60,
     timeframe: 60,
   });
+  const notification = resolveRateLimitSettings('Notification', options.notification, {
+    maxRequests: 5,
+    timeframe: 600,
+  });
 
   await app.register(rateLimit, {
     global: false,
@@ -131,6 +140,29 @@ export async function registerAuthenticationRateLimit(
     oauth2Lookup: app.rateLimit(oauth2Lookup),
     admin: app.rateLimit(admin),
   });
+
+  // SMS and email sends get their own window on a separate child store. It is a
+  // counter instead of a hook: only requests that actually send a code consume it,
+  // and a hook would be skipped because the authentication bucket already ran.
+  app.decorate('notificationRateLimiter', app.createRateLimit(notification));
+}
+
+// Consume one SMS/email send from the requester's notification window. Call it
+// after the request is validated and right before a code is sent, so requests
+// rejected for other reasons do not use up the window.
+export async function consumeNotificationRateLimit(req: FastifyRequest, rep: FastifyReply): Promise<void> {
+  const result = await req.server.notificationRateLimiter(req);
+  if (result.isAllowed || !result.isExceeded) return;
+
+  rep.header('X-RateLimit-Limit', result.max);
+  rep.header('X-RateLimit-Remaining', 0);
+  rep.header('X-RateLimit-Reset', result.ttlInSeconds);
+  rep.header('Retry-After', result.ttlInSeconds);
+
+  throw new MeilingError(
+    ErrorType.AUTHENTICATION_REQUEST_RATE_LIMITED,
+    'Too many SMS or email verification requests. Please try again later.',
+  );
 }
 
 function getPolicyDefinition(policy: AuthenticationRateLimitPolicy): {

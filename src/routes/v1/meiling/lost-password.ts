@@ -8,6 +8,7 @@ import { getPrismaClient } from '../../../resources/prisma';
 import { Event } from '../../../common';
 import { AuthenticationJSONObject } from '../../../common/meiling/identity/user';
 import { OTPVerificationRateLimitedError } from '../../../common/meiling/authentication/validate';
+import { consumeNotificationRateLimit } from '../../../common/fastify/authenticationRateLimit';
 
 const MAX_VERIFICATION_ATTEMPTS = 5;
 
@@ -181,6 +182,8 @@ export async function lostPasswordHandler(req: FastifyRequest, rep: FastifyReply
         );
         return;
       }
+
+      await consumeNotificationRateLimit(req, rep);
 
       Event.Baridegi.sendBaridegiLog(Event.Baridegi.BaridegiLogType.CREATE_AUTHENTICATION_REQUEST, {
         type: currentMethod,
