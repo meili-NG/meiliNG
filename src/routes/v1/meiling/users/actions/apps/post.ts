@@ -30,6 +30,22 @@ async function appCreateHandler(req: FastifyRequest, rep: FastifyReply): Promise
     return;
   }
 
+  for (const field of ['privacy', 'terms', 'image'] as const) {
+    let protocol: string;
+    try {
+      protocol = new URL(body[field]).protocol;
+    } catch {
+      throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, `invalid ${field} URL`);
+    }
+
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      throw new Meiling.V1.Error.MeilingError(
+        Meiling.V1.Error.ErrorType.INVALID_REQUEST,
+        `invalid ${field} URL protocol`,
+      );
+    }
+  }
+
   if (!Array.isArray(body?.accessControl?.permissions)) {
     throw new Meiling.V1.Error.MeilingError(Meiling.V1.Error.ErrorType.INVALID_REQUEST, 'invalid permissions');
   }
