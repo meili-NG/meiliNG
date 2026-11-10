@@ -30,7 +30,7 @@ export async function userPasswordUpdateHandler(req: FastifyRequest, rep: Fastif
     return;
   }
 
-  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(10) + 10);
+  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
   const hash = await bcrypt.hash(password, salt);
 
   const data = {

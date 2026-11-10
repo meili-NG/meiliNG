@@ -288,7 +288,7 @@ export async function getPasswords(user: UserModel | string) {
 }
 
 export async function addPassword(user: UserModel | string, password: string) {
-  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(10) + 5);
+  const salt = await bcrypt.genSalt(Utils.getCryptoSafeInteger(6) + 10);
   const hash = await bcrypt.hash(password, salt);
 
   const data: AuthenticationPasswordObject = {

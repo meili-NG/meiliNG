@@ -132,7 +132,7 @@ export async function signupHandler(req: FastifyRequest, rep: FastifyReply): Pro
             data: {
               type: 'PASSWORD',
               data: {
-                hash: bcrypt.hashSync(password, bcrypt.genSaltSync()),
+                hash: bcrypt.hashSync(password, bcrypt.genSaltSync(Utils.getCryptoSafeInteger(6) + 10)),
               },
             },
             allowPasswordReset: false,
