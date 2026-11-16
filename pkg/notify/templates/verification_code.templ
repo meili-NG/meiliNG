@@ -1,0 +1,44 @@
+package templates
+
+// verificationCodeBody is the default verification_code e-mail body. Mail
+// clients render layout tables with inline styles most consistently.
+templ verificationCodeBody(d VerificationCodeData) {
+	{{ text := verificationCodeTextFor(d.Lang) }}
+	<table role="presentation" lang={ text.lang } width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #1f2933;">
+		<tr>
+			<td align="center" style="padding: 24px 16px;">
+				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; text-align: left;">
+					<tr>
+						<td style="padding-bottom: 20px; font-weight: 700;">
+							if d.Branding.LogoURL != "" {
+								<img src={ d.Branding.LogoURL } alt="" height="28" style="height: 28px; vertical-align: middle; margin-right: 8px;"/>
+							}
+							{ d.Branding.Name }
+						</td>
+					</tr>
+					<tr>
+						<td>{ text.intro }</td>
+					</tr>
+					<tr>
+						<td style="padding: 20px 0;">
+							<span style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 30px; font-weight: 700; letter-spacing: 3px; -webkit-user-select: all; user-select: all;">{ d.Code }</span>
+						</td>
+					</tr>
+					<tr>
+						<td>{ text.expiry }</td>
+					</tr>
+					<tr>
+						<td style="padding-top: 8px; font-size: 14px; color: #52606d;">{ text.ignore }</td>
+					</tr>
+					if d.Branding.SupportURL != "" {
+						<tr>
+							<td style="padding-top: 20px; font-size: 14px;">
+								<a href={ templ.SafeURL(d.Branding.SupportURL) } style="color: #1f2933;">{ text.help }</a>
+							</td>
+						</tr>
+					}
+				</table>
+			</td>
+		</tr>
+	</table>
+}
